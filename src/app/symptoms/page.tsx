@@ -7,12 +7,12 @@ export default function SymptomsPage() {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false); // ✅ NEW
   const router = useRouter();
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImage(file);
+      setImage(e.target.files[0]);
     }
   };
 
@@ -25,11 +25,11 @@ export default function SymptomsPage() {
     }
 
     setError("");
+    setLoading(true); // ✅ START LOADING
 
-    // Temporarily store description
+    // Save description
     localStorage.setItem("symptomDescription", description);
 
-    // Temporarily store image as a Data URL
     if (image) {
       const reader = new FileReader();
       reader.onload = (event) => {
@@ -61,12 +61,17 @@ export default function SymptomsPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your problem (for example: fever for 2 days, pain in leg, bleeding)"
             className="w-full p-3 border rounded h-32 text-lg"
+            disabled={loading} // ✅ disable while loading
           />
 
           <div className="text-center">
             <label
               htmlFor="image-upload"
-              className="cursor-pointer inline-block bg-blue-100 text-blue-700 px-6 py-3 rounded-lg text-lg"
+              className={`cursor-pointer inline-block px-6 py-3 rounded-lg text-lg ${
+                loading
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-blue-100 text-blue-700"
+              }`}
             >
               Upload Image (optional)
             </label>
@@ -76,6 +81,7 @@ export default function SymptomsPage() {
               accept="image/*"
               onChange={handleImageChange}
               className="hidden"
+              disabled={loading} // ✅ disable
             />
             {image && (
               <p className="text-sm text-gray-500 mt-2">
@@ -88,10 +94,22 @@ export default function SymptomsPage() {
 
           <button
             type="submit"
-            className="w-full bg-green-600 text-white py-3 rounded-lg text-xl font-bold"
+            disabled={loading}
+            className={`w-full py-3 rounded-lg text-xl font-bold ${
+              loading
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-green-600 text-white"
+            }`}
           >
-            Check Health
+            {loading ? "Checking health… ⏳" : "Check Health"}
           </button>
+
+          {/* ✅ Loading message */}
+          {loading && (
+            <p className="text-center text-gray-600 text-sm">
+              Please wait, analyzing safely using AI…
+            </p>
+          )}
         </form>
       </div>
     </div>
