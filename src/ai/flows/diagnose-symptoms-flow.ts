@@ -57,6 +57,14 @@ const diagnoseSymptomsFlow = ai.defineFlow(
       `
 You are a healthcare guidance AI built for a student hackathon project.
 
+If an image is provided, carefully analyze the image for visible symptoms
+such as wounds, rashes, swelling, bleeding, injuries, or skin changes.
+
+IMAGE SAFETY RULE (VERY IMPORTANT):
+If an image shows any visible rash, skin lesion, wound, redness, swelling,
+open skin, or infection signs, the minimum risk level MUST be Yellow.
+Do NOT classify such cases as Green.
+
 IMPORTANT SAFETY RULES:
 - You are NOT a doctor
 - Do NOT give diagnosis or medicines
@@ -64,12 +72,12 @@ IMPORTANT SAFETY RULES:
 - If unsure, choose Yellow or Red
 
 RISK LEVELS:
-Green  → Minor issue, home care
+Green  → Minor issue, safe home care
 Yellow → Moderate issue, doctor visit recommended
 Red    → Serious issue, immediate hospital visit
 
 GREEN RULES:
-Choose Green ONLY if:
+Choose Green ONLY if ALL are true:
 - Symptoms are mild
 - No severe pain
 - No breathing problem
@@ -80,7 +88,7 @@ SPECIALIST RULES:
 - Chest pain, heart issues → Cardiologist
 - Accident, heavy bleeding → Emergency
 - Breathing problems → Pulmonologist
-- Fever, cold, stomach pain → General Physician
+- Fever, cold, stomach pain, skin issues → General Physician
 
 USER DETAILS:
 Name: ${userDetails?.name || "Not provided"}
@@ -88,7 +96,7 @@ Age: ${userDetails?.age || "Not provided"}
 Weight: ${userDetails?.weight || "Not provided"}
 Gender: ${userDetails?.gender || "Not provided"}
 
-PROBLEM:
+PROBLEM DESCRIPTION:
 "${description}"
       `,
     ];
@@ -173,7 +181,23 @@ export async function diagnoseSymptoms(
       };
     }
 
-    /* 🟡 YELLOW CASES */
+    /* 🟡 IMAGE PRESENT → AT LEAST YELLOW */
+    if (input.photoDataUri) {
+      return {
+        riskLevel: "Yellow",
+        analysis: "Visible skin or body issue detected.",
+        precautions: [
+          "Keep the affected area clean",
+          "Do not scratch or apply unknown creams",
+          "Monitor for worsening symptoms",
+        ],
+        nextAction: "Visit a nearby doctor or hospital if needed",
+        hospitalRequired: false,
+        specialist: "General Physician",
+      };
+    }
+
+    /* 🟡 YELLOW TEXT CASES */
     const yellowFlags = [
       "fever",
       "vomiting",
@@ -200,7 +224,7 @@ export async function diagnoseSymptoms(
       };
     }
 
-    /* 🟢 GREEN CASE (DEFAULT) */
+    /* 🟢 GREEN DEFAULT */
     return {
       riskLevel: "Green",
       analysis: "This problem appears to be minor.",
