@@ -11,6 +11,13 @@ import { AlertTriangle, HeartPulse, ShieldCheck } from "lucide-react";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
 
+/* ---------------- GOOGLE MAPS ---------------- */
+
+const openGoogleMaps = (specialist: string) => {
+  const query = encodeURIComponent(`${specialist} near me`);
+  window.open(`https://www.google.com/maps/search/${query}`, "_blank");
+};
+
 /* ---------------- RESULT CARD ---------------- */
 
 const ResultCard: React.FC<{
@@ -56,7 +63,7 @@ const ResultCard: React.FC<{
       <p className="text-lg font-semibold mb-3 text-center">{analysis}</p>
       <p className="text-lg text-center">{guidance}</p>
 
-      {/* ✅ Precautions (Green & Yellow only) */}
+      {/* Precautions */}
       {precautions && precautions.length > 0 && level !== "Red" && (
         <div className="mt-4">
           <h3 className="font-semibold text-lg mb-2">
@@ -70,11 +77,9 @@ const ResultCard: React.FC<{
         </div>
       )}
 
-      {/* ✅ Next action */}
+      {/* Next action */}
       {nextAction && level !== "Red" && (
-        <p className="mt-4 font-medium">
-          Next step: {nextAction}
-        </p>
+        <p className="mt-4 font-medium">Next step: {nextAction}</p>
       )}
     </div>
   );
@@ -98,7 +103,9 @@ export default function ResultPage() {
       const symptomImage = localStorage.getItem("symptomImage");
 
       if (!symptomDescription && !symptomImage) {
-        setError("No symptoms were provided. Please go back and describe your problem.");
+        setError(
+          "No symptoms were provided. Please go back and describe your problem."
+        );
         setLoading(false);
         return;
       }
@@ -152,10 +159,23 @@ export default function ResultPage() {
             nextAction={result.nextAction}
           />
 
-          {/* 🔴 Emergency button */}
+          {/* Yellow → Optional hospital */}
+          {result.riskLevel === "Yellow" && (
+            <button
+              onClick={() => openGoogleMaps(result.specialist)}
+              className="w-full bg-yellow-500 text-white py-3 rounded-lg text-lg font-bold hover:bg-yellow-600"
+            >
+              Find Nearby {result.specialist} (Optional)
+            </button>
+          )}
+
+          {/* Red → Mandatory hospital */}
           {result.riskLevel === "Red" && (
-            <button className="w-full bg-red-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-red-700">
-              Find Nearest Hospital
+            <button
+              onClick={() => openGoogleMaps(result.specialist)}
+              className="w-full bg-red-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-red-700"
+            >
+              🚑 Find {result.specialist} Now
             </button>
           )}
 
