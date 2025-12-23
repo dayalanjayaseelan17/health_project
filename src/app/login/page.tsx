@@ -83,6 +83,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
+                type="button"
                 onClick={() => setIsRightPanelActive(false)}
               >
                 Sign In
@@ -95,6 +96,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
+                type="button"
                 onClick={() => setIsRightPanelActive(true)}
               >
                 Sign Up

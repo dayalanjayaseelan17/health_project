@@ -17,25 +17,34 @@
 .sign-in-container {
   left: 0;
   width: 50%;
-  z-index: 2;
-}
-
-.container-main.right-panel-active .sign-in-container {
-  transform: translateX(100%);
+  z-index: 1; /* Lower z-index */
+  opacity: 0; /* Hidden by default */
+  pointer-events: none;
 }
 
 .sign-up-container {
   left: 0;
   width: 50%;
-  opacity: 0;
-  z-index: 1;
+  z-index: 2; /* Higher z-index, visible by default */
+  opacity: 1;
+  pointer-events: auto;
 }
 
-.container-main.right-panel-active .sign-up-container {
+/* When right panel is active, slide sign-in over and fade it in */
+.container-main.right-panel-active .sign-in-container {
   transform: translateX(100%);
   opacity: 1;
   z-index: 5;
+  pointer-events: auto;
   animation: show 0.6s;
+}
+
+/* When right panel is active, slide sign-up away */
+.container-main.right-panel-active .sign-up-container {
+  transform: translateX(100%);
+  opacity: 0;
+  z-index: 1;
+  pointer-events: none;
 }
 
 @keyframes show {
@@ -115,7 +124,6 @@
   transform: translateX(20%);
 }
 
-/* New button styles as per user request */
 .overlay-panel .button-ghost {
   background-color: transparent;
   border-color: hsl(var(--primary-foreground));
