@@ -6,7 +6,7 @@ import { useUser } from "@/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload } from "lucide-react";
+import { Loader2, Camera } from "lucide-react";
 
 export default function SymptomsPage() {
   const [description, setDescription] = useState("");
@@ -54,7 +54,7 @@ export default function SymptomsPage() {
     e.preventDefault();
 
     if (!description && !image) {
-      setError("Please describe your problem or upload an image.");
+      setError("Please describe your problem or upload/take a photo.");
       return;
     }
 
@@ -102,7 +102,7 @@ export default function SymptomsPage() {
             Describe Your Problem
           </h1>
           <p className="mt-2 text-muted-foreground">
-            You can type, upload a photo, or both.
+            You can type, take a photo, or both.
           </p>
         </div>
 
@@ -123,7 +123,7 @@ export default function SymptomsPage() {
 
           <div className="space-y-2">
             <label className="font-medium text-gray-800">
-              Upload an Image (Optional)
+              Take or Upload a Photo (Optional)
             </label>
             <div className="flex items-center justify-center w-full">
               <label
@@ -134,9 +134,9 @@ export default function SymptomsPage() {
                   <img src={imagePreview} alt="Symptom preview" className="h-full w-full object-contain rounded-md" />
                 ) : (
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                    <Upload className="h-8 w-8 text-gray-500 mb-2" />
+                    <Camera className="h-8 w-8 text-gray-500 mb-2" />
                     <p className="mb-2 text-sm text-gray-500">
-                      <span className="font-semibold">Click to upload</span> or drag and drop
+                      <span className="font-semibold">Click to take photo</span> or upload
                     </p>
                     <p className="text-xs text-gray-500">PNG, JPG, or JPEG</p>
                   </div>
@@ -144,7 +144,8 @@ export default function SymptomsPage() {
                  <input
                     id="image-upload"
                     type="file"
-                    accept="image/png, image/jpeg, image/jpg"
+                    accept="image/*"
+                    capture="environment"
                     onChange={handleImageChange}
                     className="hidden"
                     disabled={loading}
