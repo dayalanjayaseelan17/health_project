@@ -43,7 +43,7 @@ const signInSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
-const SignInForm = () => {
+const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   const auth = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +56,11 @@ const SignInForm = () => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // onAuthStateChanged will handle the redirect, so we don't need to do anything here on success.
+      toast({
+        title: "Login Successful",
+        description: "Redirecting you to the symptoms checker...",
+      });
+      onAuthSuccess();
     } catch (error: any) {
       console.error("Sign in error:", error.code);
       toast({
@@ -114,7 +118,7 @@ const SignInForm = () => {
   );
 };
 
-const SignUpForm = () => {
+const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -152,7 +156,11 @@ const SignUpForm = () => {
         };
         const docRef = doc(firestore, `users/${user.uid}/profile/${user.uid}`);
         setDocumentNonBlocking(docRef, userProfile, { merge: true });
-        // onAuthStateChanged will handle redirect
+        toast({
+          title: "Account Created",
+          description: "Redirecting you to the symptoms checker...",
+        });
+        onAuthSuccess();
       }
     } catch (error: any) {
       console.error("Sign up error:", error.code);
@@ -300,30 +308,28 @@ export default function LoginPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
-  const { toast } = useToast();
 
   useEffect(() => {
+    // This effect handles signing out any existing user to ensure
+    // the login page is always presented for a new session.
     if (!isUserLoading && user) {
-      if (user.isAnonymous) {
-        // If an anonymous user lands here, sign them out of the temp session
-        // so they can create a real account.
-        signOut(auth);
-      } else {
-        toast({
-          title: "Login Successful",
-          description: "Redirecting you to the symptoms checker...",
-        });
-        router.replace("/symptoms");
-      }
+      // We sign out both anonymous and non-anonymous users to ensure a clean slate.
+      signOut(auth);
     }
-  }, [user, isUserLoading, router, toast, auth]);
+  }, [user, isUserLoading, auth]);
 
-  if (isUserLoading || (user && !user.isAnonymous)) {
+  const handleAuthSuccess = () => {
+    router.replace("/symptoms");
+  };
+
+  if (isUserLoading || user) {
+    // While checking auth state or if a user is still present before sign-out completes,
+    // show a loading state to prevent flicker.
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
         <div className="flex flex-col items-center">
           <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Loading session...</p>
+          <p className="mt-4 text-lg text-muted-foreground">Preparing session...</p>
         </div>
       </div>
     );
@@ -341,7 +347,7 @@ export default function LoginPage() {
             </CardDescription>
         </CardHeader>
         <CardContent>
-            {isSignIn ? <SignInForm /> : <SignUpForm />}
+            {isSignIn ? <SignInForm onAuthSuccess={handleAuthSuccess} /> : <SignUpForm onAuthSuccess={handleAuthSuccess} />}
             <div className="mt-6 text-center text-sm">
                 {isSignIn ? "Don't have an account?" : "Already have an account?"}
                 <Button variant="link" className="pl-1" onClick={() => setIsSignIn(!isSignIn)}>
