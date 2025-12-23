@@ -28,6 +28,7 @@ import {
   query,
   where,
   getDocs,
+  limit,
 } from "firebase/firestore";
 
 // Schemas for validation
@@ -41,33 +42,64 @@ const signUpSchema = z.object({
 });
 
 const signInSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  username: z.string().min(1, "Username is required"),
   password: z.string().min(1, "Password is required"),
 });
 
 const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   const auth = useAuth();
+  const firestore = useFirestore();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   async function onSubmit(values: z.infer<typeof signInSchema>) {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // 1. Find user by username
+      const profilesRef = collectionGroup(firestore, "profile");
+      const q = query(profilesRef, where("username", "==", values.username), limit(1));
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        toast({
+          variant: "destructive",
+          title: "Sign In Failed",
+          description: "Username not found. Please check and try again.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const userProfile = querySnapshot.docs[0].data();
+      const userEmail = userProfile.email;
+
+      if (!userEmail) {
+         toast({
+          variant: "destructive",
+          title: "Sign In Failed",
+          description: "Could not find email associated with this username.",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // 2. Sign in with the retrieved email and provided password
+      await signInWithEmailAndPassword(auth, userEmail, values.password);
       toast({
         title: "Login Successful",
         description: "Redirecting you to the symptoms checker...",
       });
       onAuthSuccess();
     } catch (error: any) {
+      // Catches errors from signInWithEmailAndPassword (e.g., wrong password)
       toast({
         variant: "destructive",
         title: "Sign In Failed",
-        description: "Incorrect email or password. Please try again.",
+        description: "Incorrect password or username. Please try again.",
       });
     } finally {
       setIsLoading(false);
@@ -81,13 +113,13 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
           <h1 className="text-2xl font-bold text-primary mb-4">Sign In</h1>
           <FormField
             control={form.control}
-            name="email"
+            name="username"
             render={({ field }) => (
               <FormItem className="w-full mb-2">
                 <FormControl>
                   <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="email" placeholder="Email" className="pl-9 bg-gray-100 border-none h-10" {...field} />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input placeholder="Username" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                     </div>
                 </FormControl>
                 <FormMessage />
@@ -183,6 +215,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         const userProfile = {
           id: user.uid,
           username: values.username,
+          email: values.email, // Save the email
           age: values.age,
           height: values.height,
           weight: values.weight,
@@ -351,14 +384,11 @@ export default function LoginPage() {
   const { user, isUserLoading } = useUser();
   const auth = useAuth();
   
-  // This effect will clear the session of any non-anonymous user,
-  // forcing them to log in again. It runs only once when the component mounts.
   useEffect(() => {
     if (user && !user.isAnonymous) {
-      signOut(auth);
+      // Don't sign out automatically. Let the page handle auth state.
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array ensures this runs only once on mount.
+  }, [user, auth]);
 
 
   const handleAuthSuccess = () => {
