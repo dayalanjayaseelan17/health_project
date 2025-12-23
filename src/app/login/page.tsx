@@ -22,7 +22,7 @@ import {
   Weight,
   Mail,
   Lock,
-  Loader2,
+  LoaderCircle,
 } from "lucide-react";
 import {
   useAuth,
@@ -59,7 +59,7 @@ const signUpSchema = z.object({
 });
 
 const signInSchema = z.object({
-  email: z.string().email({ message: "Please enter a valid email." }),
+  username: z.string().min(1, { message: "Username is required." }),
   password: z.string().min(1, { message: "Password is required." }),
 });
 
@@ -73,21 +73,42 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { email: "", password: "" },
+    defaultValues: { username: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // 1. Find user by username to get their email
+      const usersRef = collection(firestore!, "users");
+      const q = query(
+        usersRef,
+        where("username", "==", values.username),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (querySnapshot.empty) {
+        throw new Error("Username not found");
+      }
+
+      const userDoc = querySnapshot.docs[0];
+      const userEmail = userDoc.data().email;
+
+      // 2. Sign in with the retrieved email and provided password
+      await signInWithEmailAndPassword(auth, userEmail, values.password);
+
       toast({ title: "Login successful" });
       onAuthSuccess();
     } catch (e: any) {
-      let description = "Invalid email or password. Please try again.";
-      if (e.code === "auth/user-not-found") {
-        description = "No account found with this email. Please sign up.";
+      let description = "An unexpected error occurred. Please try again.";
+      if (e.message === "Username not found") {
+        description = "No account found with this username.";
       } else if (e.code === "auth/wrong-password") {
         description = "Incorrect password. Please try again.";
+      } else if (e.code === "auth/user-not-found") {
+        description =
+          "No account found associated with this username's email.";
       }
       toast({
         variant: "destructive",
@@ -110,13 +131,17 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
           <FormField
             control={form.control}
-            name="email"
+            name="username"
             render={({ field }) => (
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <Input placeholder="Email" {...field} className="pl-10" />
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      placeholder="Username"
+                      {...field}
+                      className="pl-10"
+                    />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -148,7 +173,9 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
             Forgot your password?
           </a>
           <Button className="mt-4" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Sign In
           </Button>
         </form>
@@ -201,7 +228,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       const userProfile = {
         id: cred.user.uid,
         username: values.username,
-        email: values.email,
+        email: values.email, // Ensure email is saved
         age: values.age,
         height: values.height,
         weight: values.weight,
@@ -298,7 +325,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
             )}
           />
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 gap-2">
             <FormField
               control={form.control}
               name="age"
@@ -319,50 +346,54 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="height"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className="relative">
-                      <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="number"
-                        placeholder="Height (cm)"
-                        {...field}
-                        className="pl-10"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="weight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className="relative">
-                      <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                      <Input
-                        type="number"
-                        placeholder="Weight (kg)"
-                        {...field}
-                        className="pl-10"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="relative">
+                        <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                          type="number"
+                          placeholder="Height (cm)"
+                          {...field}
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <div className="relative">
+                        <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Input
+                          type="number"
+                          placeholder="Weight (kg)"
+                          {...field}
+                          className="pl-10"
+                        />
+                      </div>
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
           </div>
 
           <Button className="mt-4" disabled={loading}>
-            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {loading && (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            )}
             Sign Up
           </Button>
         </form>
@@ -374,26 +405,31 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 /* ---------------- PAGE ---------------- */
 
 export default function LoginPage() {
+  const [isClient, setIsClient] = useState(false);
   const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isClient && !isUserLoading && user) {
       router.replace("/symptoms");
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
   };
 
-  // While checking user auth state, show a loader
-  if (isUserLoading || user) {
+  // While checking user auth state or if not on client, show a loader
+  if (!isClient || isUserLoading || (isClient && user)) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-green-50">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100">
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
   }
@@ -411,8 +447,8 @@ export default function LoginPage() {
             <div className="overlay-panel overlay-left">
               <h1 className="text-4xl font-bold">Welcome Back!</h1>
               <p className="mt-4 text-center">
-                Sign in to continue your health journey and access your
-                personal dashboard.
+                Your health journey is important. Sign in to continue tracking
+                your well-being.
               </p>
               <Button
                 variant="outline"
@@ -423,10 +459,10 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
+              <h1 className="text-4xl font-bold">New Here?</h1>
               <p className="mt-4 text-center">
-                New here? Create an account to get personalized health insights
-                and tracking.
+                Join our community to get personalized health insights and start
+                your path to better health.
               </p>
               <Button
                 variant="outline"
@@ -443,5 +479,4 @@ export default function LoginPage() {
   );
 }
 // force fresh vercel build
-
-    
+      
