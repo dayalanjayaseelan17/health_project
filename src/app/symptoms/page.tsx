@@ -82,6 +82,8 @@ export default function SymptomsPage() {
         setError("Failed to read image file.");
         setLoading(false);
       };
+      setLoading(true);
+
       reader.readAsDataURL(image);
     } else {
       router.push("/result");
