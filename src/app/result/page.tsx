@@ -119,18 +119,29 @@ export default function ResultPage() {
     if (isUserLoading || isProfileLoading || !user) return;
 
     const fetchResult = async () => {
+      let description = null;
+      let image = null;
+
+      // Safely get items from localStorage
       try {
-        const description = localStorage.getItem("symptomDescription") || "";
-        const image = localStorage.getItem("symptomImage") || undefined;
+        description = localStorage.getItem("symptomDescription");
+        image = localStorage.getItem("symptomImage");
+      } catch (e) {
+        setError("Could not access stored symptom data. Please try again.");
+        setLoading(false);
+        return;
+      }
+      
+      if (!description && !image) {
+        setError("No symptoms were provided. Please go back and describe your symptoms.");
+        setLoading(false);
+        return;
+      }
 
-        if (!description && !image) {
-          setError("No symptoms provided.");
-          return;
-        }
-
+      try {
         const input: DiagnoseSymptomsInput = {
-          description,
-          photoDataUri: image,
+          description: description || "",
+          photoDataUri: image || undefined,
           userDetails: user.isAnonymous
             ? {}
             : {
@@ -142,11 +153,23 @@ export default function ResultPage() {
         };
 
         const res = await diagnoseSymptoms(input);
+        
+        if (!res || typeof res !== 'object') {
+           throw new Error("AI did not return a valid analysis.");
+        }
+
         setResult(res);
-      } catch {
-        setError("Could not analyze symptoms.");
+      } catch(e: any) {
+        setError(e.message || "Could not analyze symptoms. Please try again.");
       } finally {
         setLoading(false);
+        // Clean up localStorage after fetching
+        try {
+          localStorage.removeItem("symptomDescription");
+          localStorage.removeItem("symptomImage");
+        } catch (e) {
+          console.error("Failed to clear localStorage:", e);
+        }
       }
     };
 
@@ -165,7 +188,19 @@ export default function ResultPage() {
   }
 
   if (error) {
-    return <p className="text-red-500 text-center">{error}</p>;
+     return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
+        <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
+        <h1 className="text-2xl font-bold mb-2">Analysis Failed</h1>
+        <p className="text-red-600 max-w-md mb-6">{error}</p>
+        <button
+          onClick={() => router.push("/symptoms")}
+          className="mt-4 text-gray-600 underline"
+        >
+          Start Over
+        </button>
+      </div>
+    );
   }
 
   if (!result) return null;
@@ -179,10 +214,10 @@ export default function ResultPage() {
         nextAction={result.nextAction}
       />
 
-      {(result.riskLevel === "Yellow" || result.riskLevel === "Red") && (
+      {(result.riskLevel === "Yellow" || result.riskLevel === "Red") && result.problemType && (
         <button
           onClick={() =>
-            window.open(buildGoogleMapsUrl("General"), "_blank")
+            window.open(buildGoogleMapsUrl(result.problemType!), "_blank")
           }
           className="mt-6 w-full max-w-md bg-blue-600 text-white py-3 rounded-lg text-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700"
         >

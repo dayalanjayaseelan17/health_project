@@ -415,7 +415,6 @@ export default function LoginPage() {
     setIsClient(true);
   }, []);
 
-
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
     if (isClient && !isUserLoading && user) {
@@ -427,7 +426,7 @@ export default function LoginPage() {
     router.replace("/symptoms");
   };
 
-  // While checking user auth state, show a loader
+  // While checking user auth state, show a loader to prevent hydration mismatch
   if (!isClient || isUserLoading || (isClient && user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-green-50">
@@ -478,3 +477,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+    
