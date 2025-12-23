@@ -23,6 +23,7 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 
 // Schemas for validation
@@ -63,7 +64,7 @@ const SignInForm = () => {
   }
 
   return (
-    <div className="form-container sign-in-container">
+    <div className="absolute top-0 h-full left-0 w-1/2 transition-all duration-700 ease-in-out z-[2] group-[.right-panel-active]/container-main:translate-x-full">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -183,7 +184,7 @@ const SignUpForm = () => {
   }
 
   return (
-    <div className="form-container sign-up-container">
+    <div className="absolute top-0 h-full left-0 w-1/2 opacity-0 z-[1] transition-all duration-700 ease-in-out group-[.right-panel-active]/container-main:opacity-100 group-[.right-panel-active]/container-main:translate-x-full group-[.right-panel-active]/container-main:z-[5]">
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
@@ -327,20 +328,27 @@ const SignUpForm = () => {
 export default function LoginPage() {
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const router = useRouter();
+  const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isUserLoading && user) {
-      toast({
-        title: "Login Successful",
-        description: "Redirecting you to the symptoms checker...",
-      });
-      router.replace("/symptoms");
+      if (user.isAnonymous) {
+        // If an anonymous user lands here, sign them out of the temp session
+        // so they can create a real account.
+        signOut(auth);
+      } else {
+        toast({
+          title: "Login Successful",
+          description: "Redirecting you to the symptoms checker...",
+        });
+        router.replace("/symptoms");
+      }
     }
-  }, [user, isUserLoading, router, toast]);
+  }, [user, isUserLoading, router, toast, auth]);
 
-  if (isUserLoading || user) {
+  if (isUserLoading || (user && !user.isAnonymous)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
         <p>Loading...</p>
@@ -352,34 +360,24 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
       <div
         className={cn(
-          "relative overflow-hidden rounded-lg shadow-lg bg-white w-full max-w-4xl min-h-[520px] transition-all duration-700 ease-in-out",
+          "relative overflow-hidden rounded-lg shadow-lg bg-white w-full max-w-4xl min-h-[520px] transition-all duration-700 ease-in-out group/container-main",
           isRightPanelActive && "right-panel-active"
         )}
         id="container-main"
       >
-        {/* Sign-Up Form */}
-        <div className={cn("absolute top-0 h-full left-0 w-1/2 opacity-0 z-[1] transition-all duration-700 ease-in-out", {"right-panel-active:opacity-100 right-panel-active:translate-x-full right-panel-active:z-[5]": isRightPanelActive})}>
-          <SignUpForm />
-        </div>
-        
-        {/* Sign-In Form */}
-         <div className={cn("absolute top-0 h-full left-0 w-1/2 z-[2] transition-all duration-700 ease-in-out", {"right-panel-active:translate-x-full": isRightPanelActive})}>
-          <SignInForm />
-        </div>
+        <SignUpForm />
+        <SignInForm />
 
-        {/* Overlay */}
-        <div className={cn("absolute top-0 left-1/2 w-1/2 h-full overflow-hidden z-[100] transition-transform duration-700 ease-in-out", {"right-panel-active:-translate-x-full": isRightPanelActive})}>
-          <div className={cn("bg-gradient-to-r from-green-600 to-green-500 text-white relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-1/2": isRightPanelActive})}>
-            
-            {/* Overlay Left */}
-            <div className={cn("absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-0": isRightPanelActive, "-translate-x-1/5": !isRightPanelActive})}>
-               <h1 className="text-3xl font-bold mb-4">Welcome Back!</h1>
+        <div className="absolute top-0 left-1/2 w-1/2 h-full overflow-hidden z-[100] transition-transform duration-700 ease-in-out group-[.right-panel-active]/container-main:-translate-x-full">
+          <div className="bg-gradient-to-r from-green-600 to-green-500 text-white relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out group-[.right-panel-active]/container-main:translate-x-1/2">
+            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-700 ease-in-out -translate-x-1/5 group-[.right-panel-active]/container-main:translate-x-0">
+              <h1 className="text-3xl font-bold mb-4">Welcome Back!</h1>
               <p className="mb-6">
                 Login to continue tracking your health securely.
               </p>
               <Button
                 variant="outline"
-                className="bg-transparent border-white text-white"
+                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
                 type="button"
                 onClick={() => setIsRightPanelActive(false)}
               >
@@ -387,9 +385,8 @@ export default function LoginPage() {
               </Button>
             </div>
 
-            {/* Overlay Right */}
-            <div className={cn("absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-1/5": isRightPanelActive})}>
-               <h1 className="text-3xl font-bold mb-4">
+            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-700 ease-in-out translate-x-0 group-[.right-panel-active]/container-main:translate-x-1/5">
+              <h1 className="text-3xl font-bold mb-4">
                 Get Your Health Checked
               </h1>
               <p className="mb-6">
@@ -398,7 +395,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
-                className="bg-transparent border-white text-white"
+                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
                 type="button"
                 onClick={() => setIsRightPanelActive(true)}
               >

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useUser } from "@/firebase";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SymptomsPage() {
   const [description, setDescription] = useState("");
@@ -11,13 +12,27 @@ export default function SymptomsPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const { toast } = useToast();
 
   useEffect(() => {
-    if (!isUserLoading && !user) {
-      // Redirect to login if not authenticated
-      router.replace("/login");
+    // Wait for auth state to resolve
+    if (!isUserLoading) {
+      if (!user) {
+        // If still no user, auth failed or wasn't initiated.
+        toast({
+          variant: "destructive",
+          title: "Authentication Required",
+          description: "Redirecting to login.",
+        });
+        router.replace("/login");
+      } else if (user.isAnonymous) {
+        toast({
+          title: "Anonymous Session",
+          description: "You can check your symptoms now.",
+        });
+      }
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, toast]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -36,11 +51,8 @@ export default function SymptomsPage() {
     setError("");
     setLoading(true);
 
-    // Save description to localStorage
     localStorage.setItem("symptomDescription", description);
-
-    // We don't need user details from localStorage anymore as they are in Firestore
-    localStorage.removeItem("userDetails");
+    localStorage.removeItem("userDetails"); // Deprecated
 
     if (image) {
       const reader = new FileReader();
@@ -56,11 +68,12 @@ export default function SymptomsPage() {
       router.push("/result");
     }
   };
-  
+
   if (isUserLoading || !user) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-green-50 p-4">
-        <p>Loading...</p>
+        <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-green-600"></div>
+        <p className="ml-4 text-lg text-gray-700">Loading Session...</p>
       </div>
     );
   }
