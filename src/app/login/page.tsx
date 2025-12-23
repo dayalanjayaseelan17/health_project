@@ -449,7 +449,7 @@ export default function LoginPage() {
             <div className="overlay-panel overlay-left">
               <h1 className="text-4xl font-bold">Welcome Back!</h1>
               <p className="mt-4 text-center">
-                Your health journey is important. Sign in to continue tracking your progress.
+                Your health is your greatest wealth. Sign in to continue your wellness journey with us.
               </p>
               <Button
                 variant="outline"
@@ -460,9 +460,9 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
+              <h1 className="text-4xl font-bold">New to our Community?</h1>
               <p className="mt-4 text-center">
-                New here? Create an account to get personalized health insights and track your wellness journey.
+                Join us today! Create an account to get personalized health insights and take the first step towards a healthier you.
               </p>
               <Button
                 variant="outline"
@@ -478,5 +478,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
-    
