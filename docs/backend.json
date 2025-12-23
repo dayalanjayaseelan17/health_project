@@ -51,13 +51,13 @@
   "firestore": {
     "structure": [
       {
-        "path": "/users/{userId}/profile",
+        "path": "/users/{userId}",
         "definition": {
           "entityName": "UserProfile",
           "schema": {
             "$ref": "#/backend/entities/UserProfile"
           },
-          "description": "Stores user profile information. Includes denormalized 'userId' and 'email' for authorization and login purposes.",
+          "description": "Stores user profile information in a top-level 'users' collection. The document ID matches the Firebase Auth UID.",
           "params": [
             {
               "name": "userId",
@@ -67,6 +67,6 @@
         }
       }
     ],
-    "reasoning": "The Firestore structure is designed to store user profile data after successful sign-up. It leverages path-based ownership for user data, ensuring secure access and simple security rules. The `/users/{userId}/profile` collection stores each user's profile information, identified by their unique Firebase Authentication UID. This approach achieves Authorization Independence, as access control is directly tied to the path and the authenticated user's ID (`request.auth.uid`), eliminating the need for `get()` calls in security rules. The email is denormalized into the profile to support username-based login flows. All documents in the `profile` subcollection share the same security requirements: only the authenticated user can read or write their own profile, simplifying the security posture."
+    "reasoning": "The Firestore structure uses a top-level 'users' collection where each document ID is the user's Firebase Auth UID. This simplifies queries for username lookup during sign-in, as it avoids collection group queries and the need for manual composite indexes. This structure is more efficient and scalable for direct user lookups."
   }
 }

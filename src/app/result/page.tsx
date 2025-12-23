@@ -97,7 +97,7 @@ export default function ResultPage() {
     if (!firestore || !user?.uid) return null;
     // Don't fetch profile for anonymous users as it won't exist.
     if (user.isAnonymous) return null;
-    return doc(firestore, `users/${user.uid}/profile/${user.uid}`);
+    return doc(firestore, `users/${user.uid}`);
   }, [firestore, user?.uid, user?.isAnonymous]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);

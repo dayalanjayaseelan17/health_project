@@ -20,11 +20,10 @@ import { useAuth, useFirestore, useUser, setDocumentNonBlocking } from "@/fireba
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut,
 } from "firebase/auth";
 import {
   doc,
-  collectionGroup,
+  collection,
   query,
   where,
   getDocs,
@@ -64,9 +63,9 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         return;
     }
     try {
-      // 1. Find user by username
-      const profilesRef = collectionGroup(firestore, "profile");
-      const q = query(profilesRef, where("username", "==", values.username), limit(1));
+      // 1. Find user by username in the top-level 'users' collection
+      const usersRef = collection(firestore, "users");
+      const q = query(usersRef, where("username", "==", values.username), limit(1));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
@@ -188,8 +187,8 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
     // 1. Check for username uniqueness in Firestore
     try {
-      const profilesRef = collectionGroup(firestore, "profile");
-      const q = query(profilesRef, where("username", "==", values.username));
+      const usersRef = collection(firestore, "users");
+      const q = query(usersRef, where("username", "==", values.username));
       const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
@@ -231,7 +230,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
           height: values.height,
           weight: values.weight,
         };
-        const docRef = doc(firestore, `users/${user.uid}/profile/${user.uid}`);
+        const docRef = doc(firestore, `users/${user.uid}`);
         setDocumentNonBlocking(docRef, userProfile, { merge: true });
         toast({
           title: "Account Created",
