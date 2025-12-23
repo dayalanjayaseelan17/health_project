@@ -447,9 +447,9 @@ export default function LoginPage() {
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
-              <h1 className="text-4xl font-bold">Welcome Back, Friend!</h1>
+              <h1 className="text-4xl font-bold">Welcome Back!</h1>
               <p className="mt-4 text-center">
-                Your health journey is important. Let's continue where you left off.
+                Your health journey is important. Sign in to continue tracking your progress.
               </p>
               <Button
                 variant="outline"
@@ -460,9 +460,9 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">Ready for a Healthier You?</h1>
+              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
               <p className="mt-4 text-center">
-                Create an account to track your health and get personalized guidance on your wellness journey.
+                New here? Create an account to get personalized health insights and track your wellness journey.
               </p>
               <Button
                 variant="outline"
@@ -478,7 +478,5 @@ export default function LoginPage() {
     </div>
   );
 }
-// force fresh vercel build
-      
 
     
