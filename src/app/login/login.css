@@ -3,7 +3,7 @@
   overflow: hidden;
   width: 100%;
   max-width: 900px;
-  min-height: 520px;
+  min-height: 600px; /* Increased height */
   background-color: #fff;
 }
 
@@ -20,15 +20,15 @@
   z-index: 2;
 }
 
+.container-main.right-panel-active .sign-in-container {
+  transform: translateX(100%);
+}
+
 .sign-up-container {
   left: 0;
   width: 50%;
   opacity: 0;
   z-index: 1;
-}
-
-.container-main.right-panel-active .sign-in-container {
-  transform: translateX(100%);
 }
 
 .container-main.right-panel-active .sign-up-container {
@@ -113,4 +113,26 @@
 
 .container-main.right-panel-active .overlay-right {
   transform: translateX(20%);
+}
+
+/* New button styles as per user request */
+.overlay-panel .button-ghost {
+  background-color: transparent;
+  border-color: hsl(var(--primary-foreground));
+  color: hsl(var(--primary-foreground));
+}
+
+.social-container {
+  margin: 20px 0;
+}
+
+.social-container a {
+  border: 1px solid #DDDDDD;
+  border-radius: 50%;
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 5px;
+  height: 40px;
+  width: 40px;
 }

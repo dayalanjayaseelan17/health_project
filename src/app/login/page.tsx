@@ -36,6 +36,14 @@ const SignUpForm = () => (
         <Input type="text" placeholder="Username" className="pl-9" />
       </div>
       <div className="relative w-full max-w-sm mb-3">
+        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input type="email" placeholder="Email" className="pl-9" />
+      </div>
+       <div className="relative w-full max-w-sm mb-3">
+        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Input type="password" placeholder="Password" className="pl-9" />
+      </div>
+      <div className="relative w-full max-w-sm mb-3">
         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input type="number" placeholder="Age" className="pl-9" />
       </div>
@@ -47,7 +55,7 @@ const SignUpForm = () => (
         <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input type="number" placeholder="Weight (kg)" className="pl-9" />
       </div>
-      <Button className="w-full max-w-sm">Sign Up with Google</Button>
+      <Button className="w-full max-w-sm">Sign Up</Button>
     </div>
   </div>
 );
@@ -77,7 +85,7 @@ export default function LoginPage() {
                 variant="outline"
                 onClick={() => setIsRightPanelActive(false)}
               >
-                Create Account
+                Sign In
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
@@ -89,7 +97,7 @@ export default function LoginPage() {
                 variant="outline"
                 onClick={() => setIsRightPanelActive(true)}
               >
-                Sign In
+                Sign Up
               </Button>
             </div>
           </div>
