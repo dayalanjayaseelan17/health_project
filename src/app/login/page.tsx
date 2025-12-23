@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -403,17 +403,22 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   );
 };
 
-/* ---------------- PAGE ---------------- */
+/* ---------------- PAGE LOGIC ---------------- */
 
-export default function LoginPage() {
+const LoginPageContent = () => {
   const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
   const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-  }, []);
+    const action = searchParams.get('action');
+    if (action === 'signup') {
+      setRightPanel(true);
+    }
+  }, [searchParams]);
 
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
@@ -478,4 +483,16 @@ export default function LoginPage() {
   );
 }
 
-    
+/* ---------------- PAGE WRAPPER ---------------- */
+// This helps with Next.js Suspense for useSearchParams
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center bg-green-50">
+        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    }>
+      <LoginPageContent />
+    </Suspense>
+  )
+}
