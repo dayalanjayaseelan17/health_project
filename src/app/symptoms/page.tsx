@@ -114,7 +114,7 @@ export default function SymptomsPage() {
             Describe Your Problem
           </h1>
           <p className="mt-2 text-muted-foreground">
-            You can either type your problem or upload an image of it.
+            You can either type your problem or upload a photo of it.
           </p>
         </div>
 
@@ -136,7 +136,7 @@ export default function SymptomsPage() {
           {/* IMAGE UPLOAD */}
           <div className="space-y-2">
             <label className="font-medium text-gray-800">
-              Upload an Image (Optional)
+              Upload or Take a Photo (Optional)
             </label>
 
             <label
@@ -164,6 +164,7 @@ export default function SymptomsPage() {
                 id="image-upload"
                 type="file"
                 accept="image/*"
+                capture="environment"
                 onChange={handleImageChange}
                 className="hidden"
                 disabled={loading}

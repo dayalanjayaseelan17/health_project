@@ -52,7 +52,7 @@ const signUpSchema = z.object({
     .min(3, { message: "Username must be at least 3 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   password: z
-    .string()_
+    .string()
     .min(6, { message: "Password must be at least 6 characters." }),
   age: z.coerce.number().min(1).max(120),
   height: z.coerce.number().min(50, { message: "Height in cm" }),
@@ -409,20 +409,26 @@ export default function LoginPage() {
   const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
 
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
-    if (!isUserLoading && user) {
+    if (isClient && !isUserLoading && user) {
       router.replace("/symptoms");
     }
-  }, [user, isUserLoading, router]);
+  }, [user, isUserLoading, router, isClient]);
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
   };
 
   // While checking user auth state, show a loader
-  if (isUserLoading || user) {
+  if (!isClient || isUserLoading || (isClient && user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-green-50">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -441,9 +447,9 @@ export default function LoginPage() {
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
-              <h1 className="text-4xl font-bold">Welcome Back!</h1>
+              <h1 className="text-4xl font-bold">Welcome Back, Friend!</h1>
               <p className="mt-4 text-center">
-                To keep connected with us please login with your personal info
+                Your health journey is important. Let's continue where you left off.
               </p>
               <Button
                 variant="outline"
@@ -454,9 +460,9 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
+              <h1 className="text-4xl font-bold">Ready for a Healthier You?</h1>
               <p className="mt-4 text-center">
-                Enter your personal details and start your journey with us
+                Create an account to track your health and get personalized guidance on your wellness journey.
               </p>
               <Button
                 variant="outline"
