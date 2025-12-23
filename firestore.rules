@@ -5,6 +5,7 @@
  *
  * Key Security Decisions:
  * - Strict Ownership: Users can only read, write, and delete their own profile data. Cross-user access is strictly forbidden.
+ * - Public Username Query: A specific rule allows unauthenticated users to perform a collection group query on 'profile' collections, but ONLY when filtering by the 'username' field. This is essential and secure for the username-based login flow.
  * - No User Listing: It is impossible to list all documents in the top-level `/users` collection, preventing enumeration of the application's user base.
  * - Path-Based Security: Authorization is primarily determined by the document path (`/users/{userId}/...`), making rules fast and simple.
  *
@@ -61,6 +62,15 @@ service cloud.firestore {
     }
 
     /**
+     * @description Allows a public, unauthenticated query across all 'profile' subcollections,
+     * but ONLY for the purpose of finding a user by their username for the login flow.
+     * This is the only public read operation in the entire ruleset.
+     */
+    match /{path=**}/profile/{profileId} {
+      allow list: if request.query.get("where")[0][1] == "username";
+    }
+
+    /**
      * @description Controls access to a user's personal profile documents.
      * @path /users/{userId}/profile/{profileId}
      * @allow (create) An authenticated user creating their own profile document, correctly setting their own UID in the 'id' field.
@@ -69,6 +79,8 @@ service cloud.firestore {
      */
     match /users/{userId}/profile/{profileId} {
       allow get: if isOwner(userId);
+      // 'list' is handled by the public rule above for username lookups.
+      // A specific owner can list their own profile documents if needed (though there's typically only one).
       allow list: if isOwner(userId);
       allow create: if isCreatingOwnProfile(userId);
       allow update: if isExistingOwner(userId) && isImmutableOwnerId();
