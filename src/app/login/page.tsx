@@ -58,6 +58,11 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   async function onSubmit(values: z.infer<typeof signInSchema>) {
     setIsLoading(true);
+    if (!firestore) {
+        toast({ variant: "destructive", title: "Sign In Failed", description: "Database not available." });
+        setIsLoading(false);
+        return;
+    }
     try {
       // 1. Find user by username
       const profilesRef = collectionGroup(firestore, "profile");
@@ -174,6 +179,12 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     setIsLoading(true);
+
+     if (!firestore) {
+        toast({ variant: "destructive", title: "Sign Up Failed", description: "Database not available." });
+        setIsLoading(false);
+        return;
+    }
 
     // 1. Check for username uniqueness in Firestore
     try {
@@ -381,15 +392,6 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 export default function LoginPage() {
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const router = useRouter();
-  const { user, isUserLoading } = useUser();
-  const auth = useAuth();
-  
-  useEffect(() => {
-    if (user && !user.isAnonymous) {
-      // Don't sign out automatically. Let the page handle auth state.
-    }
-  }, [user, auth]);
-
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
