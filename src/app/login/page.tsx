@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -13,6 +12,7 @@ import {
   FormControl,
   FormField,
   FormItem,
+  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -25,6 +25,8 @@ import {
   createUserWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
 
 // Schemas for validation
 const signUpSchema = z.object({
@@ -64,67 +66,46 @@ const SignInForm = () => {
   }
 
   return (
-    <div className="absolute top-0 h-full left-0 w-1/2 transition-all duration-700 ease-in-out z-[2] group-[.right-panel-active]/container-main:translate-x-full">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full bg-card"
-        >
-          <h1 className="text-3xl font-bold text-primary mb-4">Sign In</h1>
-          <div className="w-full max-w-sm space-y-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="relative">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Email</FormLabel>
+              <FormControl>
+                 <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        className="pl-9"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Input type="email" placeholder="Email" className="pl-9" {...field} />
                   </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="relative">
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Password</FormLabel>
+               <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        className="pl-9"
-                        {...field}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <a
-            href="#"
-            className="text-sm text-muted-foreground hover:text-primary mt-4"
-          >
+                    <Input type="password" placeholder="Password" className="pl-9" {...field} />
+                </div>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+         <a href="#" className="text-sm text-muted-foreground hover:text-primary block text-right">
             Forgot your password?
           </a>
-          <Button type="submit" className="w-full max-w-sm mt-4">
-            Sign In
-          </Button>
-        </form>
-      </Form>
-    </div>
+        <Button type="submit" className="w-full">
+          Sign In
+        </Button>
+      </form>
+    </Form>
   );
 };
 
@@ -184,26 +165,17 @@ const SignUpForm = () => {
   }
 
   return (
-    <div className="absolute top-0 h-full left-0 w-1/2 opacity-0 z-[1] transition-all duration-700 ease-in-out group-[.right-panel-active]/container-main:opacity-100 group-[.right-panel-active]/container-main:translate-x-full group-[.right-panel-active]/container-main:z-[5]">
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full bg-card"
-        >
-          <h1 className="text-3xl font-bold text-primary mb-4">
-            Create Account
-          </h1>
-          <div className="w-full max-w-sm space-y-3">
-            <FormField
+     <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+          <FormField
               control={form.control}
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <div className="relative">
+                  <FormLabel>Username</FormLabel>
+                   <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input placeholder="Username" className="pl-9" {...field} />
-                    </FormControl>
+                    <Input placeholder="Username" className="pl-9" {...field} />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -214,16 +186,10 @@ const SignUpForm = () => {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <div className="relative">
+                  <FormLabel>Email</FormLabel>
+                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        className="pl-9"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Input type="email" placeholder="Email" className="pl-9" {...field} />
                   </div>
                   <FormMessage />
                 </FormItem>
@@ -234,99 +200,92 @@ const SignUpForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="relative">
+                  <FormLabel>Password</FormLabel>
+                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        className="pl-9"
-                        {...field}
-                      />
-                    </FormControl>
+                    <Input type="password" placeholder="Password" className="pl-9" {...field} />
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <FormField
-              control={form.control}
-              name="age"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="relative">
-                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Age"
-                        className="pl-9"
-                        {...field}
-                        value={field.value === undefined ? '' : field.value}
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="height"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="relative">
-                    <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Height (cm)"
-                        className="pl-9"
-                        {...field}
-                        value={field.value === undefined ? '' : field.value}
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="weight"
-              render={({ field }) => (
-                <FormItem>
-                  <div className="relative">
-                    <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <FormControl>
-                      <Input
-                        type="number"
-                        placeholder="Weight (kg)"
-                        className="pl-9"
-                        {...field}
-                        value={field.value === undefined ? '' : field.value}
-                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                      />
-                    </FormControl>
-                  </div>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-          <Button type="submit" className="w-full max-w-sm mt-6">
+            <div className="flex gap-3">
+                <FormField
+                control={form.control}
+                name="age"
+                render={({ field }) => (
+                    <FormItem className="flex-1">
+                    <FormLabel>Age</FormLabel>
+                    <div className="relative">
+                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="number"
+                            placeholder="Age"
+                            className="pl-9"
+                            {...field}
+                            value={field.value === undefined ? '' : field.value}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                        />
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="height"
+                render={({ field }) => (
+                    <FormItem className="flex-1">
+                     <FormLabel>Height (cm)</FormLabel>
+                    <div className="relative">
+                        <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="number"
+                            placeholder="Height"
+                            className="pl-9"
+                            {...field}
+                            value={field.value === undefined ? '' : field.value}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                        />
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+                <FormField
+                control={form.control}
+                name="weight"
+                render={({ field }) => (
+                    <FormItem className="flex-1">
+                    <FormLabel>Weight (kg)</FormLabel>
+                    <div className="relative">
+                        <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="number"
+                            placeholder="Weight"
+                            className="pl-9"
+                            {...field}
+                            value={field.value === undefined ? '' : field.value}
+                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                        />
+                    </div>
+                    <FormMessage />
+                    </FormItem>
+                )}
+                />
+            </div>
+            
+          <Button type="submit" className="w-full !mt-6">
             Sign Up
           </Button>
         </form>
       </Form>
-    </div>
   );
 };
 
+
 export default function LoginPage() {
-  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
+  const [isSignIn, setIsSignIn] = useState(false);
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
@@ -358,53 +317,25 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
-      <div
-        className={cn(
-          "relative overflow-hidden rounded-lg shadow-lg bg-white w-full max-w-4xl min-h-[520px] transition-all duration-700 ease-in-out group/container-main",
-          isRightPanelActive && "right-panel-active"
-        )}
-        id="container-main"
-      >
-        <SignUpForm />
-        <SignInForm />
-
-        <div className="absolute top-0 left-1/2 w-1/2 h-full overflow-hidden z-[100] transition-transform duration-700 ease-in-out group-[.right-panel-active]/container-main:-translate-x-full">
-          <div className="bg-gradient-to-r from-green-600 to-green-500 text-white relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out group-[.right-panel-active]/container-main:translate-x-1/2">
-            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-700 ease-in-out -translate-x-1/5 group-[.right-panel-active]/container-main:translate-x-0">
-              <h1 className="text-3xl font-bold mb-4">Welcome Back!</h1>
-              <p className="mb-6">
-                Login to continue tracking your health securely.
-              </p>
-              <Button
-                variant="outline"
-                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
-                type="button"
-                onClick={() => setIsRightPanelActive(false)}
-              >
-                Sign In
-              </Button>
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+            <CardTitle className="text-2xl font-bold text-primary">
+                {isSignIn ? "Welcome Back!" : "Create an Account"}
+            </CardTitle>
+            <CardDescription>
+                {isSignIn ? "Sign in to continue tracking your health." : "Get your health checked securely."}
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            {isSignIn ? <SignInForm /> : <SignUpForm />}
+            <div className="mt-6 text-center text-sm">
+                {isSignIn ? "Don't have an account?" : "Already have an account?"}
+                <Button variant="link" className="pl-1" onClick={() => setIsSignIn(!isSignIn)}>
+                    {isSignIn ? "Sign Up" : "Sign In"}
+                </Button>
             </div>
-
-            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-700 ease-in-out translate-x-0 group-[.right-panel-active]/container-main:translate-x-1/5">
-              <h1 className="text-3xl font-bold mb-4">
-                Get Your Health Checked
-              </h1>
-              <p className="mb-6">
-                Check your health condition easily and store your data securely
-                in the cloud.
-              </p>
-              <Button
-                variant="outline"
-                className="bg-transparent border-white text-white hover:bg-white/20 hover:text-white"
-                type="button"
-                onClick={() => setIsRightPanelActive(true)}
-              >
-                Sign Up
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
