@@ -13,7 +13,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
@@ -21,12 +20,11 @@ import { User, Calendar, Ruler, Weight, Mail, Lock } from "lucide-react";
 import {
   useAuth,
   useUser,
-  initiateEmailSignIn,
-  initiateEmailSignUp,
   setDocumentNonBlocking,
 } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
 import "./login.css";
 
 // Schemas for validation
@@ -46,13 +44,24 @@ const signInSchema = z.object({
 
 const SignInForm = () => {
   const auth = useAuth();
+  const { toast } = useToast();
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  function onSubmit(values: z.infer<typeof signInSchema>) {
-    initiateEmailSignIn(auth, values.email, values.password);
+  async function onSubmit(values: z.infer<typeof signInSchema>) {
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      // onAuthStateChanged will handle the redirect
+    } catch (error: any) {
+      console.error("Sign in error:", error.code);
+      toast({
+        variant: "destructive",
+        title: "Sign In Failed",
+        description: "Incorrect email or password. Please try again.",
+      });
+    }
   }
 
   return (
@@ -121,6 +130,7 @@ const SignInForm = () => {
 const SignUpForm = () => {
   const auth = useAuth();
   const firestore = useFirestore();
+  const { toast } = useToast();
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -134,8 +144,8 @@ const SignUpForm = () => {
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     try {
       // This is a special case; we need the user object to save profile data.
-      // In a real app, you might use a cloud function to handle this.
-      const userCredential = await auth.createUserWithEmailAndPassword(
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
         values.email,
         values.password
       );
@@ -151,10 +161,23 @@ const SignUpForm = () => {
         };
         const docRef = doc(firestore, `users/${user.uid}/profile/${user.uid}`);
         setDocumentNonBlocking(docRef, userProfile, { merge: true });
+        // onAuthStateChanged will handle the redirect
       }
     } catch (error: any) {
-      console.error("Sign up error:", error);
-      // Handle errors like email-already-in-use
+      console.error("Sign up error:", error.code);
+      if (error.code === 'auth/email-already-in-use') {
+        toast({
+          variant: "destructive",
+          title: "Sign Up Failed",
+          description: "This email is already registered. Please sign in.",
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Sign Up Failed",
+          description: "An unexpected error occurred. Please try again.",
+        });
+      }
     }
   }
 
