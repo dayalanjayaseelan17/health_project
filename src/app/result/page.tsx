@@ -7,9 +7,10 @@ import {
   type DiagnoseSymptomsOutput,
   type DiagnoseSymptomsInput,
 } from "@/ai/flows/diagnose-symptoms-flow";
-import { AlertTriangle, HeartPulse, ShieldCheck } from "lucide-react";
+import { AlertTriangle, HeartPulse, ShieldCheck, Map as MapIcon } from "lucide-react";
 import { useDoc, useUser, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc, DocumentData } from "firebase/firestore";
+import Map from "@/components/Map";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
 
@@ -88,6 +89,7 @@ export default function ResultPage() {
   const [result, setResult] = useState<DiagnoseSymptomsOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showMap, setShowMap] = useState(false);
   const router = useRouter();
 
   const { user, isUserLoading } = useUser();
@@ -183,11 +185,17 @@ export default function ResultPage() {
             nextAction={result.nextAction}
           />
 
-          {result.hospitalRequired && (
-            <button className="w-full bg-red-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-red-700">
-              Find Nearest Hospital
+          {(result.riskLevel === 'Red' || result.riskLevel === 'Yellow') && (
+            <button
+              onClick={() => setShowMap(!showMap)}
+              className="w-full bg-blue-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-2"
+            >
+              <MapIcon />
+              {showMap ? 'Hide Map' : 'Find Nearest Hospital'}
             </button>
           )}
+
+          {showMap && <Map />}
 
           <div className="text-center text-xs text-gray-500 p-4 border-t-2 border-gray-200 mt-4">
             <p className="font-bold">Disclaimer:</p>
