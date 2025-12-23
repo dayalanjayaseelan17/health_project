@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,12 +16,19 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Ruler, Weight, Mail, Lock, Loader2 } from "lucide-react";
-import { useAuth, useFirestore, setDocumentNonBlocking } from "@/firebase";
+import { useAuth, useFirestore, useUser, setDocumentNonBlocking } from "@/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
-import { doc } from "firebase/firestore";
+import {
+  doc,
+  collectionGroup,
+  query,
+  where,
+  getDocs,
+} from "firebase/firestore";
 
 // Schemas for validation
 const signUpSchema = z.object({
@@ -135,6 +142,35 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     setIsLoading(true);
+
+    // 1. Check for username uniqueness in Firestore
+    try {
+      const profilesRef = collectionGroup(firestore, "profile");
+      const q = query(profilesRef, where("username", "==", values.username));
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        toast({
+          variant: "destructive",
+          title: "Sign Up Failed",
+          description: "Username already taken, please choose another.",
+        });
+        setIsLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking username:", error);
+      toast({
+        variant: "destructive",
+        title: "Sign Up Failed",
+        description: "Could not verify username. Please try again.",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+
+    // 2. Attempt to create user with Firebase Auth (will catch duplicate email)
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -228,7 +264,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 </FormItem>
               )}
             />
-             <div className="w-full mb-2">
+            <div className="w-full mb-2">
                 <FormField
                     control={form.control}
                     name="age"
@@ -300,7 +336,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
             </div>
           <Button type="submit" className="w-40 rounded-full mt-4" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Creating..." : "Sign Up"}
+            {isLoading ? "Checking..." : "Sign Up"}
           </Button>
         </form>
       </Form>
@@ -312,6 +348,18 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 export default function LoginPage() {
   const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  
+  // This effect will clear the session of any non-anonymous user,
+  // forcing them to log in again. It runs only once when the component mounts.
+  useEffect(() => {
+    if (user && !user.isAnonymous) {
+      signOut(auth);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Empty dependency array ensures this runs only once on mount.
+
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
@@ -322,23 +370,16 @@ export default function LoginPage() {
       <div 
         className={`container-main ${isRightPanelActive ? 'right-panel-active' : ''}`}
       >
-        {/* Sign Up Container - This is always mounted */}
         <SignUpForm onAuthSuccess={handleAuthSuccess} />
-
-        {/* Sign In Container - This is always mounted */}
         <SignInForm onAuthSuccess={handleAuthSuccess} />
         
-        {/* Overlay Container - This slides over the forms */}
         <div className="overlay-container">
           <div className="overlay">
-            {/* Overlay Left Panel (for switching to Sign In) */}
             <div className="overlay-panel overlay-left">
                 <h1 className="text-2xl font-bold">Welcome Back!</h1>
                 <p className="text-sm mt-2 mb-4">To keep connected with us please login with your personal info</p>
                 <Button variant="outline" className="bg-transparent border-white text-white rounded-full w-40" onClick={() => setIsRightPanelActive(false)}>Sign In</Button>
             </div>
-
-            {/* Overlay Right Panel (for switching to Sign Up) */}
             <div className="overlay-panel overlay-right">
                 <h1 className="text-2xl font-bold">Hello, Friend!</h1>
                 <p className="text-sm mt-2 mb-4">Enter your personal details and start your journey with us</p>
