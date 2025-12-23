@@ -414,6 +414,7 @@ const LoginPageContent = () => {
 
   useEffect(() => {
     setIsClient(true);
+    // This logic to switch panels is now back
     const action = searchParams.get('action');
     if (action === 'signup') {
       setRightPanel(true);

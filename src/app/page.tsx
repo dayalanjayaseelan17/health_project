@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
-import { HeartPulse, User, UserPlus } from "lucide-react";
+import { HeartPulse, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const FeatureCard = ({
@@ -24,10 +24,10 @@ const FeatureCard = ({
   onClick: () => void;
   isLoading: boolean;
 }) => (
-  <div className="flex flex-col items-center justify-between rounded-xl bg-white/80 p-6 text-center shadow-lg backdrop-blur-sm transition-transform hover:scale-105 h-full">
+  <div className="flex h-full flex-col items-center justify-between rounded-xl bg-white/80 p-6 text-center shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
     <div className="mb-4">{icon}</div>
     <h2 className="mb-2 text-2xl font-bold text-primary">{title}</h2>
-    <p className="mb-6 text-muted-foreground flex-grow">{description}</p>
+    <p className="mb-6 flex-grow text-muted-foreground">{description}</p>
     <Button
       size="lg"
       onClick={onClick}
@@ -40,9 +40,7 @@ const FeatureCard = ({
 );
 
 export default function Home() {
-  const [loading, setLoading] = useState<"quick" | "signin" | "signup" | null>(
-    null
-  );
+  const [loading, setLoading] = useState<"quick" | "login" | null>(null);
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
@@ -69,14 +67,9 @@ export default function Home() {
     }
   };
 
-  const handleSignIn = () => {
-    setLoading("signin");
+  const handleLogin = () => {
+    setLoading("login");
     router.push("/login");
-  };
-
-  const handleSignUp = () => {
-    setLoading("signup");
-    router.push("/login?action=signup");
   };
 
   return (
@@ -90,7 +83,7 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid w-full max-w-5xl grid-cols-1 gap-8 md:grid-cols-3">
+      <div className="grid w-full max-w-3xl grid-cols-1 gap-8 md:grid-cols-2">
         <FeatureCard
           icon={<HeartPulse className="h-12 w-12 text-green-500" />}
           title="Quick Health Check"
@@ -101,19 +94,11 @@ export default function Home() {
         />
         <FeatureCard
           icon={<User className="h-12 w-12 text-blue-500" />}
-          title="Sign In"
-          description="Access your saved health data and continue your wellness journey."
-          buttonText="Sign In"
-          onClick={handleSignIn}
-          isLoading={loading === "signin"}
-        />
-        <FeatureCard
-          icon={<UserPlus className="h-12 w-12 text-purple-500" />}
-          title="Sign Up"
-          description="Create an account to get personalized health insights and track your progress."
-          buttonText="Sign Up"
-          onClick={handleSignUp}
-          isLoading={loading === "signup"}
+          title="Secure Login"
+          description="Sign in or create an account to get personalized health insights and track your progress."
+          buttonText="Sign In / Sign Up"
+          onClick={handleLogin}
+          isLoading={loading === "login"}
         />
       </div>
     </main>
