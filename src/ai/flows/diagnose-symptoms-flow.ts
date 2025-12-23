@@ -35,6 +35,9 @@ const DiagnoseSymptomsOutputSchema = z.object({
   precautions: z.array(z.string()).describe("Simple home care steps."),
   nextAction: z.string().describe("What the user should do next."),
   hospitalRequired: z.boolean().describe("True only if hospital visit is required."),
+  problemType: z
+    .enum(["Heart", "Brain", "Skin", "Bone", "General"])
+    .describe("The category of health problem."),
 });
 
 export type DiagnoseSymptomsOutput = z.infer<
@@ -64,21 +67,19 @@ IMPORTANT SAFETY RULES:
 - If unsure, choose Yellow or Red.
 
 TASK:
-Classify the health problem into ONE category:
+Based on the user's problem, provide a risk assessment and classify the problem into a specialist category.
 
-GREEN:
-- Minor issue
-- Safe home care
+STEP 1: Classify the health problem into ONE risk category:
+- GREEN: Minor issue, safe home care.
+- YELLOW: Moderate issue, doctor visit recommended if needed.
+- RED: Serious or emergency, immediate hospital visit required.
 
-YELLOW:
-- Moderate issue
-- Doctor or hospital visit recommended if needed
-
-RED:
-- Serious or emergency
-- Immediate hospital visit required
-
-Based on the user's problem, provide a risk assessment.
+STEP 2: Classify the problem into ONE specialist category:
+- Heart: Problems related to chest pain, high blood pressure, palpitations.
+- Brain: Problems like severe headaches, dizziness, stroke symptoms, confusion.
+- Skin: Rashes, infections, burns, cuts.
+- Bone: Fractures, joint pain, sprains.
+- General: Common issues like fever, cough, cold, stomach ache that don't fit other categories.
 
 USER DETAILS:
 Name: ${userDetails?.name || "Not provided"}
@@ -137,6 +138,7 @@ export async function diagnoseSymptoms(
         precautions: ["Describe the problem clearly", "Upload a photo if possible"],
         nextAction: "Visit a nearby doctor or hospital if needed",
         hospitalRequired: false,
+        problemType: "General",
       };
     }
 
@@ -163,6 +165,7 @@ export async function diagnoseSymptoms(
         precautions: [],
         nextAction: "Go to the nearest hospital immediately",
         hospitalRequired: true,
+        problemType: text.includes("chest") ? "Heart" : "General",
       };
     }
 
@@ -176,6 +179,7 @@ export async function diagnoseSymptoms(
       ],
       nextAction: "Visit a nearby doctor or hospital if needed",
       hospitalRequired: false,
+      problemType: "General",
     };
   }
 }

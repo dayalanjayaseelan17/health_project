@@ -7,12 +7,37 @@ import {
   type DiagnoseSymptomsOutput,
   type DiagnoseSymptomsInput,
 } from "@/ai/flows/diagnose-symptoms-flow";
-import { AlertTriangle, HeartPulse, ShieldCheck, Map as MapIcon } from "lucide-react";
+import { AlertTriangle, HeartPulse, ShieldCheck, MapPinned } from "lucide-react";
 import { useDoc, useUser, useFirestore, useMemoFirebase } from "@/firebase";
 import { doc, DocumentData } from "firebase/firestore";
-import Map from "@/components/Map";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
+type ProblemType = "Heart" | "Brain" | "Skin" | "Bone" | "General";
+
+/* ---------------- GOOGLE MAPS URL BUILDER ---------------- */
+
+const getSpecialistSearchQuery = (problemType: ProblemType): string => {
+  switch (problemType) {
+    case "Heart":
+      return "cardiology hospital near me";
+    case "Brain":
+      return "neurology hospital near me";
+    case "Skin":
+      return "dermatology hospital near me";
+    case "Bone":
+      return "orthopedic hospital near me";
+    case "General":
+    default:
+      return "general hospital near me";
+  }
+};
+
+const buildGoogleMapsUrl = (problemType: ProblemType): string => {
+  const query = getSpecialistSearchQuery(problemType);
+  const encodedQuery = encodeURIComponent(query);
+  return `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+};
+
 
 /* ---------------- RESULT CARD ---------------- */
 
@@ -89,7 +114,6 @@ export default function ResultPage() {
   const [result, setResult] = useState<DiagnoseSymptomsOutput | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [showMap, setShowMap] = useState(false);
   const router = useRouter();
 
   const { user, isUserLoading } = useUser();
@@ -159,6 +183,13 @@ export default function ResultPage() {
     getResult();
   }, [user, isUserLoading, userProfile, isProfileLoading]);
 
+  const handleFindHospitalClick = () => {
+    if (result) {
+      const url = buildGoogleMapsUrl(result.problemType);
+      window.open(url, "_blank");
+    }
+  };
+
   const showLoading = loading || isUserLoading || isProfileLoading;
 
   return (
@@ -187,15 +218,13 @@ export default function ResultPage() {
 
           {(result.riskLevel === 'Red' || result.riskLevel === 'Yellow') && (
             <button
-              onClick={() => setShowMap(!showMap)}
+              onClick={handleFindHospitalClick}
               className="w-full bg-blue-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-2"
             >
-              <MapIcon />
-              {showMap ? 'Hide Map' : 'Find Nearest Hospital'}
+              <MapPinned />
+              Find Nearby Specialist Hospital
             </button>
           )}
-
-          {showMap && <Map />}
 
           <div className="text-center text-xs text-gray-500 p-4 border-t-2 border-gray-200 mt-4">
             <p className="font-bold">Disclaimer:</p>
