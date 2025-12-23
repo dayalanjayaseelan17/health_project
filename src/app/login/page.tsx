@@ -83,6 +83,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
+                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
                 type="button"
                 onClick={() => setIsRightPanelActive(false)}
               >
@@ -96,6 +97,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
+                className="border-primary-foreground text-primary-foreground hover:bg-primary-foreground/10"
                 type="button"
                 onClick={() => setIsRightPanelActive(true)}
               >

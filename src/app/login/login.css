@@ -17,15 +17,15 @@
 .sign-in-container {
   left: 0;
   width: 50%;
-  z-index: 1; /* Lower z-index */
-  opacity: 0; /* Hidden by default */
+  z-index: 1;
+  opacity: 0;
   pointer-events: none;
 }
 
 .sign-up-container {
   left: 0;
   width: 50%;
-  z-index: 2; /* Higher z-index, visible by default */
+  z-index: 2;
   opacity: 1;
   pointer-events: auto;
 }
@@ -122,12 +122,6 @@
 
 .container-main.right-panel-active .overlay-right {
   transform: translateX(20%);
-}
-
-.overlay-panel .button-ghost {
-  background-color: transparent;
-  border-color: hsl(var(--primary-foreground));
-  color: hsl(var(--primary-foreground));
 }
 
 .social-container {
