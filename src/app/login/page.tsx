@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,7 +23,6 @@ import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-  signOut,
 } from "firebase/auth";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 
@@ -304,25 +303,14 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 export default function LoginPage() {
   const [isSignIn, setIsSignIn] = useState(false);
   const router = useRouter();
-  const auth = useAuth();
   const { user, isUserLoading } = useUser();
-
-  useEffect(() => {
-    // This effect handles signing out any existing user to ensure
-    // the login page is always presented for a new session.
-    if (!isUserLoading && user && !user.isAnonymous) {
-      // We sign out non-anonymous users to ensure a clean slate.
-      signOut(auth);
-    }
-  }, [user, isUserLoading, auth]);
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
   };
 
-  if (isUserLoading || (user && !user.isAnonymous)) {
-    // While checking auth state or if a user is still present before sign-out completes,
-    // show a loading state to prevent flicker.
+  if (isUserLoading) {
+    // While checking auth state, show a loading state to prevent flicker.
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
         <div className="flex flex-col items-center">
