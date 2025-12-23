@@ -68,7 +68,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   }
 
   return (
-    <div className="absolute top-0 left-0 h-full w-1/2 flex items-center justify-center">
+    <div className="form-container sign-in-container">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-center justify-center h-full px-12 text-center w-full">
           <h1 className="text-2xl font-bold text-primary mb-4">Sign In</h1>
@@ -179,7 +179,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   }
 
   return (
-    <div className="absolute top-0 left-0 h-full w-1/2 flex items-center justify-center">
+    <div className="form-container sign-up-container">
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-center justify-center h-full px-12 text-center w-full">
             <h1 className="text-2xl font-bold text-primary mb-4">Create Account</h1>
@@ -318,31 +318,25 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
       <div 
-        id="container-main"
-        className={`relative overflow-hidden rounded-2xl shadow-2xl bg-white w-full max-w-4xl min-h-[520px] 
-                    ${isRightPanelActive ? 'right-panel-active' : ''}`}
+        className={`container-main ${isRightPanelActive ? 'right-panel-active' : ''}`}
       >
-        {/* Sign Up Container */}
-        <div className="form-container sign-up-container">
-          <SignUpForm onAuthSuccess={handleAuthSuccess} />
-        </div>
+        {/* Sign Up Container - This is always mounted */}
+        <SignUpForm onAuthSuccess={handleAuthSuccess} />
 
-        {/* Sign In Container */}
-        <div className="form-container sign-in-container">
-          <SignInForm onAuthSuccess={handleAuthSuccess} />
-        </div>
+        {/* Sign In Container - This is always mounted */}
+        <SignInForm onAuthSuccess={handleAuthSuccess} />
         
-        {/* Overlay Container */}
+        {/* Overlay Container - This slides over the forms */}
         <div className="overlay-container">
           <div className="overlay">
-            {/* Overlay Left */}
+            {/* Overlay Left Panel (for switching to Sign In) */}
             <div className="overlay-panel overlay-left">
                 <h1 className="text-2xl font-bold">Welcome Back!</h1>
                 <p className="text-sm mt-2 mb-4">To keep connected with us please login with your personal info</p>
                 <Button variant="outline" className="bg-transparent border-white text-white rounded-full w-40" onClick={() => setIsRightPanelActive(false)}>Sign In</Button>
             </div>
 
-            {/* Overlay Right */}
+            {/* Overlay Right Panel (for switching to Sign Up) */}
             <div className="overlay-panel overlay-right">
                 <h1 className="text-2xl font-bold">Hello, Friend!</h1>
                 <p className="text-sm mt-2 mb-4">Enter your personal details and start your journey with us</p>
