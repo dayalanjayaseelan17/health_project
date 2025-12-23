@@ -17,9 +17,9 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Ruler, Weight, Mail, Lock } from "lucide-react";
-import { useAuth, useUser, setDocumentNonBlocking } from "@/firebase";
+import { useAuth, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
-import { useFirestore } from "@/firebase/provider";
+import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
@@ -68,56 +68,58 @@ const SignInForm = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full space-y-4"
+          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full bg-card"
         >
           <h1 className="text-3xl font-bold text-primary mb-4">Sign In</h1>
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem className="w-full max-w-sm">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="Email"
-                      className="pl-9"
-                      {...field}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem className="w-full max-w-sm">
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <FormControl>
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      className="pl-9"
-                      {...field}
-                    />
-                  </FormControl>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="w-full max-w-sm space-y-4">
+            <FormField
+              control={form.control}
+              name="email"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        type="email"
+                        placeholder="Email"
+                        className="pl-9"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <FormControl>
+                      <Input
+                        type="password"
+                        placeholder="Password"
+                        className="pl-9"
+                        {...field}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
           <a
             href="#"
-            className="text-sm text-muted-foreground hover:text-primary"
+            className="text-sm text-muted-foreground hover:text-primary mt-4"
           >
             Forgot your password?
           </a>
-          <Button type="submit" className="w-full max-w-sm">
+          <Button type="submit" className="w-full max-w-sm mt-4">
             Sign In
           </Button>
         </form>
@@ -145,7 +147,6 @@ const SignUpForm = () => {
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
     try {
-      // This is a special case; we need the user object to save profile data.
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         values.email,
@@ -155,7 +156,7 @@ const SignUpForm = () => {
 
       if (user) {
         const userProfile = {
-          id: user.uid, // Denormalized ID for security rules
+          id: user.uid,
           username: values.username,
           age: values.age,
           height: values.height,
@@ -163,7 +164,6 @@ const SignUpForm = () => {
         };
         const docRef = doc(firestore, `users/${user.uid}/profile/${user.uid}`);
         setDocumentNonBlocking(docRef, userProfile, { merge: true });
-        // onAuthStateChanged will handle the redirect
       }
     } catch (error: any) {
       console.error("Sign up error:", error.code);
@@ -188,7 +188,7 @@ const SignUpForm = () => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full"
+          className="flex flex-col items-center justify-center h-full px-4 md:px-8 text-center w-full bg-card"
         >
           <h1 className="text-3xl font-bold text-primary mb-4">
             Create Account
@@ -332,7 +332,6 @@ export default function LoginPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // If user is loaded and exists, redirect.
     if (!isUserLoading && user) {
       toast({
         title: "Login Successful",
@@ -342,7 +341,6 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router, toast]);
 
-  // Don't render the form until we know the user is not logged in
   if (isUserLoading || user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
@@ -355,7 +353,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
       <div
         className={cn(
-          "container-main rounded-xl bg-card text-card-foreground shadow-2xl",
+          "container-main",
           isRightPanelActive && "right-panel-active"
         )}
       >
