@@ -15,11 +15,8 @@ const UserDetailsSchema = z.object({
 /* ---------------- INPUT ---------------- */
 
 const DiagnoseSymptomsInputSchema = z.object({
-  description: z.string().describe("The user's description of their symptoms."),
-  photoDataUri: z
-    .string()
-    .optional()
-    .describe("Optional photo of the symptom as a Base64 data URI."),
+  description: z.string().optional(),
+  photoDataUri: z.string().optional(),
   userDetails: UserDetailsSchema.optional(),
 });
 
@@ -31,13 +28,10 @@ export type DiagnoseSymptomsInput = z.infer<
 
 const DiagnoseSymptomsOutputSchema = z.object({
   riskLevel: z.enum(["Green", "Yellow", "Red"]),
-  analysis: z.string().describe("Short, simple explanation in one sentence."),
-  precautions: z.array(z.string()).describe("Simple home care steps."),
-  nextAction: z.string().describe("What the user should do next."),
-  hospitalRequired: z.boolean().describe("True only if hospital visit is required."),
-  problemType: z
-    .enum(["Heart", "Brain", "Skin", "Bone", "General"])
-    .describe("The category of health problem."),
+  analysis: z.string(),
+  precautions: z.array(z.string()),
+  nextAction: z.string(),
+  hospitalRequired: z.boolean(),
 });
 
 export type DiagnoseSymptomsOutput = z.infer<
@@ -53,33 +47,32 @@ const diagnoseSymptomsFlow = ai.defineFlow(
     outputSchema: DiagnoseSymptomsOutputSchema,
   },
   async (input) => {
-    const { userDetails, description, photoDataUri } = input;
+    const { description = "", photoDataUri, userDetails } = input;
 
-    const llmResponse = await ai.generate({
-      prompt: `
+    const promptParts: any[] = [
+      {
+        text: `
 You are a healthcare guidance AI built for a student hackathon project.
 
-IMPORTANT SAFETY RULES:
-- You are NOT a doctor.
-- You must NOT give medical diagnosis.
-- You must NOT prescribe medicines.
-- Use very simple language for rural users.
-- If unsure, choose Yellow or Red.
+IMPORTANT RULES:
+- You are NOT a doctor
+- Do NOT give medical diagnosis
+- Do NOT prescribe medicines
+- Use simple language for rural users
+- If unsure, choose Yellow or Red
 
-TASK:
-Based on the user's problem, provide a risk assessment and classify the problem into a specialist category.
+RISK LEVEL RULE:
+If an image shows wounds, rashes, swelling, bleeding, or infection,
+the minimum risk MUST be Yellow.
 
-STEP 1: Classify the health problem into ONE risk category:
-- GREEN: Minor issue, safe home care.
-- YELLOW: Moderate issue, doctor visit recommended if needed.
-- RED: Serious or emergency, immediate hospital visit required.
-
-STEP 2: Classify the problem into ONE specialist category:
-- Heart: Problems related to chest pain, high blood pressure, palpitations.
-- Brain: Problems like severe headaches, dizziness, stroke symptoms, confusion.
-- Skin: Rashes, infections, burns, cuts.
-- Bone: Fractures, joint pain, sprains.
-- General: Common issues like fever, cough, cold, stomach ache that don't fit other categories.
+OUTPUT FORMAT (STRICT JSON):
+{
+  riskLevel: "Green" | "Yellow" | "Red",
+  analysis: string,
+  precautions: string[],
+  nextAction: string,
+  hospitalRequired: boolean
+}
 
 USER DETAILS:
 Name: ${userDetails?.name || "Not provided"}
@@ -89,43 +82,51 @@ Gender: ${userDetails?.gender || "Not provided"}
 
 PROBLEM DESCRIPTION:
 "${description}"
-${photoDataUri ? `PHOTO: {{media url="${photoDataUri}"}}` : ''}
-`,
-      output: {
-        schema: DiagnoseSymptomsOutputSchema,
-        format: 'json',
+        `,
       },
+    ];
+
+    if (photoDataUri) {
+      promptParts.push({
+        media: { url: photoDataUri },
+      });
+    }
+
+    const response = await ai.generate({
+      prompt: promptParts,
+      output: { schema: DiagnoseSymptomsOutputSchema },
       model: "googleai/gemini-2.5-flash",
-      config: {
-        temperature: 0.2,
-      },
+      config: { temperature: 0.2 },
     });
 
-    if (!llmResponse.output) {
+    if (!response.output) {
       throw new Error("No response from AI");
     }
 
-    const output = llmResponse.output;
+    const output = response.output;
 
-    // Post-processing to ensure rules are followed
+    // Enforce safety rules
     if (output.riskLevel === "Green") {
-        output.nextAction = "Continue home care and monitor";
-        output.hospitalRequired = false;
-    } else if (output.riskLevel === "Yellow") {
-        output.nextAction = "Visit a nearby doctor or hospital if needed";
-        output.hospitalRequired = false;
-    } else if (output.riskLevel === "Red") {
-        output.nextAction = "Go to the nearest hospital immediately";
-        output.hospitalRequired = true;
-        output.precautions = []; // No precautions for Red
+      output.nextAction = "Continue home care and monitor";
+      output.hospitalRequired = false;
     }
 
+    if (output.riskLevel === "Yellow") {
+      output.nextAction = "Visit a nearby doctor or hospital if needed";
+      output.hospitalRequired = false;
+    }
+
+    if (output.riskLevel === "Red") {
+      output.nextAction = "Go to the nearest hospital immediately";
+      output.hospitalRequired = true;
+      output.precautions = [];
+    }
 
     return output;
   }
 );
 
-/* ---------------- FALLBACK ---------------- */
+/* ---------------- FALLBACK LOGIC ---------------- */
 
 export async function diagnoseSymptoms(
   input: DiagnoseSymptomsInput
@@ -135,10 +136,12 @@ export async function diagnoseSymptoms(
       return {
         riskLevel: "Yellow",
         analysis: "Not enough information provided.",
-        precautions: ["Describe the problem clearly", "Upload a photo if possible"],
+        precautions: [
+          "Describe the problem clearly",
+          "Upload a photo if possible",
+        ],
         nextAction: "Visit a nearby doctor or hospital if needed",
         hospitalRequired: false,
-        problemType: "General",
       };
     }
 
@@ -146,7 +149,7 @@ export async function diagnoseSymptoms(
   } catch (error) {
     console.error("AI failed, using fallback:", error);
 
-    const text = input.description.toLowerCase();
+    const text = (input.description || "").toLowerCase();
 
     const redFlags = [
       "chest pain",
@@ -165,21 +168,15 @@ export async function diagnoseSymptoms(
         precautions: [],
         nextAction: "Go to the nearest hospital immediately",
         hospitalRequired: true,
-        problemType: text.includes("chest") ? "Heart" : "General",
       };
     }
 
     return {
       riskLevel: "Yellow",
-      analysis: "This problem needs attention.",
-      precautions: [
-        "Take rest",
-        "Drink enough water",
-        "Avoid heavy work",
-      ],
+      analysis: "Medical attention may be needed.",
+      precautions: ["Consult a doctor if symptoms worsen"],
       nextAction: "Visit a nearby doctor or hospital if needed",
       hospitalRequired: false,
-      problemType: "General",
     };
   }
 }

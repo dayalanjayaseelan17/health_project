@@ -9,7 +9,7 @@ import {
 } from "@/ai/flows/diagnose-symptoms-flow";
 import { AlertTriangle, HeartPulse, ShieldCheck, MapPinned } from "lucide-react";
 import { useDoc, useUser, useFirestore, useMemoFirebase } from "@/firebase";
-import { doc, DocumentData } from "firebase/firestore";
+import { doc } from "firebase/firestore";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
 type ProblemType = "Heart" | "Brain" | "Skin" | "Bone" | "General";
@@ -26,18 +26,15 @@ const getSpecialistSearchQuery = (problemType: ProblemType): string => {
       return "dermatology hospital near me";
     case "Bone":
       return "orthopedic hospital near me";
-    case "General":
     default:
       return "general hospital near me";
   }
 };
 
 const buildGoogleMapsUrl = (problemType: ProblemType): string => {
-  const query = getSpecialistSearchQuery(problemType);
-  const encodedQuery = encodeURIComponent(query);
-  return `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`;
+  const query = encodeURIComponent(getSpecialistSearchQuery(problemType));
+  return `https://www.google.com/maps/search/?api=1&query=${query}`;
 };
-
 
 /* ---------------- RESULT CARD ---------------- */
 
@@ -49,58 +46,43 @@ const ResultCard: React.FC<{
 }> = ({ level, analysis, precautions, nextAction }) => {
   const config = {
     Green: {
-      bgColor: "bg-green-100",
-      textColor: "text-green-800",
-      borderColor: "border-green-500",
+      bg: "bg-green-100 border-green-500 text-green-800",
       icon: <ShieldCheck className="h-16 w-16" />,
       title: "Minor Problem",
-      guidance: "This problem looks minor. You can take rest and basic care at home.",
     },
     Yellow: {
-      bgColor: "bg-yellow-100",
-      textColor: "text-yellow-800",
-      borderColor: "border-yellow-500",
+      bg: "bg-yellow-100 border-yellow-500 text-yellow-800",
       icon: <AlertTriangle className="h-16 w-16" />,
       title: "Caution Advised",
-      guidance: "This problem needs attention. Please visit a hospital if possible.",
     },
     Red: {
-      bgColor: "bg-red-100",
-      textColor: "text-red-800",
-      borderColor: "border-red-500",
+      bg: "bg-red-100 border-red-500 text-red-800",
       icon: <HeartPulse className="h-16 w-16" />,
       title: "Emergency",
-      guidance: "This is serious. Please go to the nearest hospital immediately.",
     },
   };
 
-  const { bgColor, textColor, borderColor, icon, title, guidance } = config[level];
+  const { bg, icon, title } = config[level];
 
   return (
-    <div
-      className={`w-full max-w-md rounded-2xl shadow-lg p-6 ${bgColor} ${textColor} border-2 ${borderColor}`}
-    >
+    <div className={`w-full max-w-md rounded-2xl border-2 p-6 shadow-lg ${bg}`}>
       <div className="flex justify-center mb-4">{icon}</div>
-
-      <h2 className="text-3xl font-bold mb-2 text-center">{title}</h2>
-      <p className="text-lg font-semibold mb-3 text-center">{analysis}</p>
-      <p className="text-lg text-center">{guidance}</p>
+      <h2 className="text-3xl font-bold text-center mb-2">{title}</h2>
+      <p className="text-lg text-center font-semibold mb-4">{analysis}</p>
 
       {precautions && precautions.length > 0 && (
         <div className="mt-4">
-          <h3 className="font-semibold text-lg mb-2">
-            What you can do now:
-          </h3>
+          <h3 className="font-semibold text-lg mb-2">What you can do now:</h3>
           <ul className="list-disc pl-5 space-y-1">
-            {precautions.map((tip, index) => (
-              <li key={index}>{tip}</li>
+            {precautions.map((tip, i) => (
+              <li key={i}>{tip}</li>
             ))}
           </ul>
         </div>
       )}
 
       {nextAction && (
-        <p className="mt-4 font-medium">
+        <p className="mt-4 font-medium text-center">
           Next step: {nextAction}
         </p>
       )}
@@ -120,129 +102,106 @@ export default function ResultPage() {
   const firestore = useFirestore();
 
   const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    // Don't fetch profile for anonymous users as it won't exist.
-    if (user.isAnonymous) return null;
+    if (!firestore || !user?.uid || user.isAnonymous) return null;
     return doc(firestore, `users/${user.uid}`);
   }, [firestore, user?.uid, user?.isAnonymous]);
 
-  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+  const { data: userProfile, isLoading: isProfileLoading } =
+    useDoc(userProfileRef);
 
   useEffect(() => {
-    // This effect handles authentication and redirection.
-    if (isUserLoading) {
-      return; // Wait until auth state is determined
-    }
-    if (!user) {
+    if (!isUserLoading && !user) {
       router.replace("/login");
     }
   }, [user, isUserLoading, router]);
-  
+
   useEffect(() => {
-    // This effect handles fetching the diagnosis result.
-    // It should only run after we know we have a user.
-    if (isUserLoading || isProfileLoading || !user) {
-      return;
-    }
+    if (isUserLoading || isProfileLoading || !user) return;
 
-    const getResult = async () => {
-      setLoading(true);
-      setError(null);
-
-      const symptomDescription = localStorage.getItem("symptomDescription");
-      const symptomImage = localStorage.getItem("symptomImage");
-
-      if (!symptomDescription && !symptomImage) {
-        setError("No symptoms were provided. Please go back and describe your problem.");
-        setLoading(false);
-        return;
-      }
-
+    const fetchResult = async () => {
       try {
+        const description = localStorage.getItem("symptomDescription") || "";
+        const image = localStorage.getItem("symptomImage") || undefined;
+
+        if (!description && !image) {
+          setError("No symptoms provided.");
+          return;
+        }
+
         const input: DiagnoseSymptomsInput = {
-          description: symptomDescription || "",
-          photoDataUri: symptomImage || undefined,
-          userDetails: user.isAnonymous ? {} : (userProfile ? {
-            name: userProfile.username,
-            age: String(userProfile.age),
-            weight: String(userProfile.weight),
-            gender: userProfile.gender || "Not specified",
-          } : {}),
+          description,
+          photoDataUri: image,
+          userDetails: user.isAnonymous
+            ? {}
+            : {
+                name: userProfile?.username,
+                age: String(userProfile?.age),
+                weight: String(userProfile?.weight),
+                gender: userProfile?.gender,
+              },
         };
 
-        const diagnosisResult = await diagnoseSymptoms(input);
-        setResult(diagnosisResult);
-      } catch (e) {
-        console.error(e);
-        setError("Could not get guidance. Please try again.");
+        const res = await diagnoseSymptoms(input);
+        setResult(res);
+      } catch {
+        setError("Could not analyze symptoms.");
       } finally {
         setLoading(false);
       }
     };
 
-    getResult();
-  }, [user, isUserLoading, userProfile, isProfileLoading]);
+    fetchResult();
+  }, [user, isUserLoading, isProfileLoading, userProfile]);
 
-  const handleFindHospitalClick = () => {
-    if (result) {
-      const url = buildGoogleMapsUrl(result.problemType);
-      window.open(url, "_blank");
-    }
-  };
+  if (loading || isUserLoading || isProfileLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="w-16 h-16 border-4 border-dashed border-green-600 rounded-full animate-spin" />
+        <p className="mt-4 text-green-700 text-xl">
+          Analyzing your symptoms safely...
+        </p>
+      </div>
+    );
+  }
 
-  const showLoading = loading || isUserLoading || isProfileLoading;
+  if (error) {
+    return <p className="text-red-500 text-center">{error}</p>;
+  }
+
+  if (!result) return null;
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-      {showLoading && (
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-green-600 mx-auto"></div>
-          <p className="text-green-700 mt-4 text-xl">
-            Analyzing your symptoms safely...
-          </p>
-        </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+      <ResultCard
+        level={result.riskLevel}
+        analysis={result.analysis}
+        precautions={result.precautions}
+        nextAction={result.nextAction}
+      />
+
+      {(result.riskLevel === "Yellow" || result.riskLevel === "Red") && (
+        <button
+          onClick={() =>
+            window.open(buildGoogleMapsUrl("General"), "_blank")
+          }
+          className="mt-6 w-full max-w-md bg-blue-600 text-white py-3 rounded-lg text-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700"
+        >
+          <MapPinned />
+          Find Nearby Specialist Hospital
+        </button>
       )}
 
-      {error && !showLoading && (
-        <p className="text-red-500 text-center text-lg">{error}</p>
-      )}
+      <button
+        onClick={() => router.push("/symptoms")}
+        className="mt-4 text-gray-600 underline"
+      >
+        Start Over
+      </button>
 
-      {result && !showLoading && (
-        <div className="w-full max-w-md flex flex-col items-center gap-6">
-          <ResultCard
-            level={result.riskLevel}
-            analysis={result.analysis}
-            precautions={result.precautions}
-            nextAction={result.nextAction}
-          />
-
-          {(result.riskLevel === 'Red' || result.riskLevel === 'Yellow') && (
-            <button
-              onClick={handleFindHospitalClick}
-              className="w-full bg-blue-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-blue-700 flex items-center justify-center gap-2"
-            >
-              <MapPinned />
-              Find Nearby Specialist Hospital
-            </button>
-          )}
-
-          <div className="text-center text-xs text-gray-500 p-4 border-t-2 border-gray-200 mt-4">
-            <p className="font-bold">Disclaimer:</p>
-            <p>
-              This is AI-assisted guidance, not a medical diagnosis. This tool is
-              for a hackathon and is not a real medical service. Always consult a
-              qualified healthcare professional.
-            </p>
-          </div>
-
-          <button
-            onClick={() => router.push("/symptoms")}
-            className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-lg"
-          >
-            Start Over
-          </button>
-        </div>
-      )}
+      <p className="mt-6 text-xs text-gray-500 text-center max-w-md">
+        This is AI-assisted guidance for a hackathon project and not a medical
+        diagnosis. Always consult a healthcare professional.
+      </p>
     </div>
   );
 }
