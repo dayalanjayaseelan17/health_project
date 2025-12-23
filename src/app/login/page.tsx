@@ -424,12 +424,12 @@ const LoginPageContent = () => {
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
     if (isClient && !isUserLoading && user) {
-      router.replace("/symptoms");
+      router.replace("/dashboard");
     }
   }, [user, isUserLoading, router, isClient]);
 
   const handleAuthSuccess = () => {
-    router.replace("/symptoms");
+    router.replace("/dashboard");
   };
 
   // While checking user auth state, show a loader to prevent hydration mismatch
@@ -497,3 +497,5 @@ export default function LoginPage() {
     </Suspense>
   )
 }
+
+    
