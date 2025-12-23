@@ -8,6 +8,8 @@ import {
   type DiagnoseSymptomsInput,
 } from "@/ai/flows/diagnose-symptoms-flow";
 import { AlertTriangle, HeartPulse, ShieldCheck } from "lucide-react";
+import { useDoc, useUser, useFirestore, useMemoFirebase } from "@/firebase";
+import { doc, DocumentData } from "firebase/firestore";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
 
@@ -16,10 +18,9 @@ type RiskLevel = "Green" | "Yellow" | "Red";
 const ResultCard: React.FC<{
   level: RiskLevel;
   analysis: string;
-  guidance: string;
   precautions?: string[];
   nextAction?: string;
-}> = ({ level, analysis, guidance, precautions, nextAction }) => {
+}> = ({ level, analysis, precautions, nextAction }) => {
   const config = {
     Green: {
       bgColor: "bg-green-100",
@@ -27,6 +28,7 @@ const ResultCard: React.FC<{
       borderColor: "border-green-500",
       icon: <ShieldCheck className="h-16 w-16" />,
       title: "Minor Problem",
+      guidance: "This problem looks minor. You can take rest and basic care at home.",
     },
     Yellow: {
       bgColor: "bg-yellow-100",
@@ -34,6 +36,7 @@ const ResultCard: React.FC<{
       borderColor: "border-yellow-500",
       icon: <AlertTriangle className="h-16 w-16" />,
       title: "Caution Advised",
+      guidance: "This problem needs attention. Please visit a hospital if possible.",
     },
     Red: {
       bgColor: "bg-red-100",
@@ -41,10 +44,11 @@ const ResultCard: React.FC<{
       borderColor: "border-red-500",
       icon: <HeartPulse className="h-16 w-16" />,
       title: "Emergency",
+      guidance: "This is serious. Please go to the nearest hospital immediately.",
     },
   };
 
-  const { bgColor, textColor, borderColor, icon, title } = config[level];
+  const { bgColor, textColor, borderColor, icon, title, guidance } = config[level];
 
   return (
     <div
@@ -56,8 +60,7 @@ const ResultCard: React.FC<{
       <p className="text-lg font-semibold mb-3 text-center">{analysis}</p>
       <p className="text-lg text-center">{guidance}</p>
 
-      {/* ✅ Precautions (Green & Yellow only) */}
-      {precautions && precautions.length > 0 && level !== "Red" && (
+      {precautions && precautions.length > 0 && (
         <div className="mt-4">
           <h3 className="font-semibold text-lg mb-2">
             What you can do now:
@@ -70,8 +73,7 @@ const ResultCard: React.FC<{
         </div>
       )}
 
-      {/* ✅ Next action */}
-      {nextAction && level !== "Red" && (
+      {nextAction && (
         <p className="mt-4 font-medium">
           Next step: {nextAction}
         </p>
@@ -88,12 +90,32 @@ export default function ResultPage() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
 
+  const { user, isUserLoading } = useUser();
+  const firestore = useFirestore();
+
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, `users/${user.uid}/profile/${user.uid}`);
+  }, [firestore, user?.uid]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
   useEffect(() => {
     const getResult = async () => {
+      // Wait for user and profile to be loaded
+      if (isUserLoading || isProfileLoading) {
+        return;
+      }
+      
+      // If no user, redirect to login
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+
       setLoading(true);
       setError(null);
 
-      const userDetailsString = localStorage.getItem("userDetails");
       const symptomDescription = localStorage.getItem("symptomDescription");
       const symptomImage = localStorage.getItem("symptomImage");
 
@@ -104,14 +126,15 @@ export default function ResultPage() {
       }
 
       try {
-        const userDetails = userDetailsString
-          ? JSON.parse(userDetailsString)
-          : {};
-
         const input: DiagnoseSymptomsInput = {
           description: symptomDescription || "",
           photoDataUri: symptomImage || undefined,
-          userDetails,
+          userDetails: userProfile ? {
+            name: userProfile.username,
+            age: String(userProfile.age),
+            weight: String(userProfile.weight),
+            gender: userProfile.gender || "Not specified",
+          } : {},
         };
 
         const diagnosisResult = await diagnoseSymptoms(input);
@@ -125,11 +148,13 @@ export default function ResultPage() {
     };
 
     getResult();
-  }, []);
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+
+  const showLoading = loading || isUserLoading || isProfileLoading;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4">
-      {loading && (
+      {showLoading && (
         <div className="text-center">
           <div className="w-16 h-16 border-4 border-dashed rounded-full animate-spin border-green-600 mx-auto"></div>
           <p className="text-green-700 mt-4 text-xl">
@@ -138,28 +163,25 @@ export default function ResultPage() {
         </div>
       )}
 
-      {error && !loading && (
+      {error && !showLoading && (
         <p className="text-red-500 text-center text-lg">{error}</p>
       )}
 
-      {result && !loading && (
+      {result && !showLoading && (
         <div className="w-full max-w-md flex flex-col items-center gap-6">
           <ResultCard
             level={result.riskLevel}
             analysis={result.analysis}
-            guidance={result.guidance}
             precautions={result.precautions}
             nextAction={result.nextAction}
           />
 
-          {/* 🔴 Emergency button */}
-          {result.riskLevel === "Red" && (
+          {result.hospitalRequired && (
             <button className="w-full bg-red-600 text-white py-3 rounded-lg text-xl font-bold hover:bg-red-700">
               Find Nearest Hospital
             </button>
           )}
 
-          {/* Disclaimer */}
           <div className="text-center text-xs text-gray-500 p-4 border-t-2 border-gray-200 mt-4">
             <p className="font-bold">Disclaimer:</p>
             <p>
@@ -170,7 +192,7 @@ export default function ResultPage() {
           </div>
 
           <button
-            onClick={() => router.push("/")}
+            onClick={() => router.push("/symptoms")}
             className="w-full bg-gray-200 text-gray-700 py-2 rounded-lg text-lg"
           >
             Start Over

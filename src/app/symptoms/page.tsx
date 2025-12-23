@@ -1,14 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useUser } from "@/firebase";
 
 export default function SymptomsPage() {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false); // ✅ NEW
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      // Redirect to login if not authenticated
+      router.replace("/login");
+    }
+  }, [user, isUserLoading, router]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -25,10 +34,13 @@ export default function SymptomsPage() {
     }
 
     setError("");
-    setLoading(true); // ✅ START LOADING
+    setLoading(true);
 
-    // Save description
+    // Save description to localStorage
     localStorage.setItem("symptomDescription", description);
+
+    // We don't need user details from localStorage anymore as they are in Firestore
+    localStorage.removeItem("userDetails");
 
     if (image) {
       const reader = new FileReader();
@@ -44,6 +56,14 @@ export default function SymptomsPage() {
       router.push("/result");
     }
   };
+  
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-green-50 p-4">
+        <p>Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-green-50 p-4">
@@ -61,7 +81,7 @@ export default function SymptomsPage() {
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe your problem (for example: fever for 2 days, pain in leg, bleeding)"
             className="w-full p-3 border rounded h-32 text-lg"
-            disabled={loading} // ✅ disable while loading
+            disabled={loading}
           />
 
           <div className="text-center">
@@ -81,7 +101,7 @@ export default function SymptomsPage() {
               accept="image/*"
               onChange={handleImageChange}
               className="hidden"
-              disabled={loading} // ✅ disable
+              disabled={loading}
             />
             {image && (
               <p className="text-sm text-gray-500 mt-2">
@@ -104,7 +124,6 @@ export default function SymptomsPage() {
             {loading ? "Checking health… ⏳" : "Check Health"}
           </button>
 
-          {/* ✅ Loading message */}
           {loading && (
             <p className="text-center text-gray-600 text-sm">
               Please wait, analyzing safely using AI…

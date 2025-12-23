@@ -52,8 +52,8 @@ const diagnoseSymptomsFlow = ai.defineFlow(
   async (input) => {
     const { userDetails, description, photoDataUri } = input;
 
-    const promptParts: any[] = [
-      `
+    const llmResponse = await ai.generate({
+      prompt: `
 You are a healthcare guidance AI built for a student hackathon project.
 
 IMPORTANT SAFETY RULES:
@@ -78,27 +78,7 @@ RED:
 - Serious or emergency
 - Immediate hospital visit required
 
-OUTPUT FORMAT (STRICT):
-Return ONLY these fields:
-
-riskLevel: "Green" | "Yellow" | "Red"
-
-analysis:
-- One short sentence in simple language
-
-precautions:
-- ONLY for Green and Yellow
-- 3–5 basic home-care steps
-- Empty array for Red
-
-nextAction:
-- Green → "Continue home care and monitor"
-- Yellow → "Visit a nearby doctor or hospital if needed"
-- Red → "Go to the nearest hospital immediately"
-
-hospitalRequired:
-- true ONLY if riskLevel is Red
-- false for Green and Yellow
+Based on the user's problem, provide a risk assessment.
 
 USER DETAILS:
 Name: ${userDetails?.name || "Not provided"}
@@ -108,17 +88,11 @@ Gender: ${userDetails?.gender || "Not provided"}
 
 PROBLEM DESCRIPTION:
 "${description}"
-      `,
-    ];
-
-    if (photoDataUri) {
-      promptParts.push({ media: { url: photoDataUri } });
-    }
-
-    const llmResponse = await ai.generate({
-      prompt: promptParts,
+${photoDataUri ? `PHOTO: {{media url="${photoDataUri}"}}` : ''}
+`,
       output: {
         schema: DiagnoseSymptomsOutputSchema,
+        format: 'json',
       },
       model: "googleai/gemini-2.5-flash",
       config: {
@@ -130,7 +104,23 @@ PROBLEM DESCRIPTION:
       throw new Error("No response from AI");
     }
 
-    return llmResponse.output;
+    const output = llmResponse.output;
+
+    // Post-processing to ensure rules are followed
+    if (output.riskLevel === "Green") {
+        output.nextAction = "Continue home care and monitor";
+        output.hospitalRequired = false;
+    } else if (output.riskLevel === "Yellow") {
+        output.nextAction = "Visit a nearby doctor or hospital if needed";
+        output.hospitalRequired = false;
+    } else if (output.riskLevel === "Red") {
+        output.nextAction = "Go to the nearest hospital immediately";
+        output.hospitalRequired = true;
+        output.precautions = []; // No precautions for Red
+    }
+
+
+    return output;
   }
 );
 
