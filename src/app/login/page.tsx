@@ -262,6 +262,7 @@ const SignUpForm = () => {
                         placeholder="Age"
                         className="pl-9"
                         {...field}
+                        value={field.value === undefined ? '' : field.value}
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
@@ -283,6 +284,7 @@ const SignUpForm = () => {
                         placeholder="Height (cm)"
                         className="pl-9"
                         {...field}
+                        value={field.value === undefined ? '' : field.value}
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
@@ -304,6 +306,7 @@ const SignUpForm = () => {
                         placeholder="Weight (kg)"
                         className="pl-9"
                         {...field}
+                        value={field.value === undefined ? '' : field.value}
                         onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
