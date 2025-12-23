@@ -228,29 +228,31 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 </FormItem>
               )}
             />
+             <div className="w-full mb-2">
+                <FormField
+                    control={form.control}
+                    name="age"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormControl>
+                        <div className="relative">
+                            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                            <Input
+                                type="number"
+                                placeholder="Age"
+                                className="pl-9 bg-gray-100 border-none h-10"
+                                {...field}
+                                value={field.value === undefined ? '' : field.value}
+                                onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
+                            />
+                        </div>
+                        </FormControl>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
+            </div>
             <div className="flex gap-2 w-full mb-2">
-              <FormField
-                control={form.control}
-                name="age"
-                render={({ field }) => (
-                    <FormItem className="flex-1">
-                    <FormControl>
-                    <div className="relative">
-                        <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                        <Input
-                            type="number"
-                            placeholder="Age"
-                            className="pl-9 bg-gray-100 border-none h-10"
-                            {...field}
-                            value={field.value === undefined ? '' : field.value}
-                            onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
-                        />
-                    </div>
-                    </FormControl>
-                    <FormMessage />
-                    </FormItem>
-                )}
-              />
               <FormField
                 control={form.control}
                 name="height"
