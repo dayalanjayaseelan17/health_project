@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -28,6 +28,7 @@ import {
   useAuth,
   useFirestore,
   setDocumentNonBlocking,
+  useUser,
 } from "@/firebase";
 import {
   signInWithEmailAndPassword,
@@ -45,17 +46,21 @@ import {
 /* ---------------- SCHEMAS ---------------- */
 
 const signUpSchema = z.object({
-  username: z.string().min(3),
-  email: z.string().email(),
-  password: z.string().min(6),
+  username: z
+    .string()
+    .min(3, { message: "Username must be at least 3 characters." }),
+  email: z.string().email({ message: "Please enter a valid email." }),
+  password: z
+    .string()
+    .min(6, { message: "Password must be at least 6 characters." }),
   age: z.coerce.number().min(1).max(120),
-  height: z.coerce.number().min(50),
-  weight: z.coerce.number().min(10),
+  height: z.coerce.number().min(50, { message: "Height in cm" }),
+  weight: z.coerce.number().min(10, { message: "Weight in kg" }),
 });
 
 const signInSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
+  email: z.string().email({ message: "Please enter a valid email." }),
+  password: z.string().min(1, { message: "Password is required." }),
 });
 
 /* ---------------- SIGN IN ---------------- */
@@ -68,29 +73,26 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { email: "", password: "" },
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     setLoading(true);
-
     try {
-      const usersRef = collection(firestore!, "users");
-      const q = query(usersRef, where("username", "==", values.username), limit(1));
-      const snap = await getDocs(q);
-
-      if (snap.empty) throw new Error("User not found");
-
-      const email = snap.docs[0].data().email;
-      await signInWithEmailAndPassword(auth, email, values.password);
-
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({ title: "Login successful" });
       onAuthSuccess();
-    } catch {
+    } catch (e: any) {
+      let description = "Invalid email or password. Please try again.";
+      if (e.code === "auth/user-not-found") {
+        description = "No account found with this email. Please sign up.";
+      } else if (e.code === "auth/wrong-password") {
+        description = "Incorrect password. Please try again.";
+      }
       toast({
         variant: "destructive",
-        title: "Login failed",
-        description: "Invalid username or password",
+        title: "Login Failed",
+        description,
       });
     } finally {
       setLoading(false);
@@ -100,27 +102,51 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <div className="form-container sign-in-container">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col justify-center px-12">
-          <h2 className="text-2xl font-bold mb-4">Sign In</h2>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="h-full flex flex-col justify-center px-12 space-y-4"
+        >
+          <h1 className="text-3xl font-bold">Sign In</h1>
 
-          <FormField control={form.control} name="username" render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input placeholder="Username" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input placeholder="Email" {...field} className="pl-10" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-          <FormField control={form.control} name="password" render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input type="password" placeholder="Password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )} />
-
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      {...field}
+                      className="pl-10"
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <a href="#" className="text-sm text-gray-500 hover:underline">
+            Forgot your password?
+          </a>
           <Button className="mt-4" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Sign In
@@ -141,36 +167,65 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
+    defaultValues: {
+      username: "",
+      email: "",
+      password: "",
+    },
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
     setLoading(true);
 
     try {
+      // 1. Check if username is unique
       const usersRef = collection(firestore!, "users");
-      const q = query(usersRef, where("username", "==", values.username));
-      const snap = await getDocs(q);
-      if (!snap.empty) throw new Error("Username exists");
+      const q = query(
+        usersRef,
+        where("username", "==", values.username),
+        limit(1)
+      );
+      const usernameSnap = await getDocs(q);
+      if (!usernameSnap.empty) {
+        throw new Error("Username already taken, please choose another");
+      }
 
+      // 2. Create user with email and password
       const cred = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
 
-      await setDocumentNonBlocking(
+      // 3. Save user profile data to Firestore
+      const userProfile = {
+        id: cred.user.uid,
+        username: values.username,
+        email: values.email,
+        age: values.age,
+        height: values.height,
+        weight: values.weight,
+      };
+
+      setDocumentNonBlocking(
         doc(firestore!, `users/${cred.user.uid}`),
-        { ...values, email: values.email },
+        userProfile,
         { merge: true }
       );
 
-      toast({ title: "Account created" });
+      toast({ title: "Account created successfully!" });
       onAuthSuccess();
-    } catch {
+    } catch (e: any) {
+      let description = "An unexpected error occurred.";
+      if (e.message === "Username already taken, please choose another") {
+        description = e.message;
+      } else if (e.code === "auth/email-already-in-use") {
+        description = "This email is already registered. Please sign in.";
+      }
       toast({
         variant: "destructive",
-        title: "Sign up failed",
-        description: "Username or email already exists",
+        title: "Sign Up Failed",
+        description,
       });
     } finally {
       setLoading(false);
@@ -180,23 +235,131 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <div className="form-container sign-up-container">
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col justify-center px-12">
-          <h2 className="text-2xl font-bold mb-4">Create Account</h2>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="h-full flex flex-col justify-center px-12 space-y-2"
+        >
+          <h1 className="text-3xl font-bold mb-2">Create Account</h1>
 
-          {["username", "email", "password", "age", "height", "weight"].map((name) => (
-            <FormField key={name} control={form.control} name={name as any} render={({ field }) => (
+          <FormField
+            control={form.control}
+            name="username"
+            render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <Input
-                    {...field}
-                    type={name === "password" ? "password" : "text"}
-                    placeholder={name}
-                  />
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      placeholder="Username"
+                      {...field}
+                      className="pl-10"
+                    />
+                  </div>
                 </FormControl>
                 <FormMessage />
               </FormItem>
-            )} />
-          ))}
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input placeholder="Email" {...field} className="pl-10" />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Input
+                      type="password"
+                      placeholder="Password"
+                      {...field}
+                      className="pl-10"
+                    />
+                  </div>
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid grid-cols-3 gap-2">
+            <FormField
+              control={form.control}
+              name="age"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        type="number"
+                        placeholder="Age"
+                        {...field}
+                        className="pl-10"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="height"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        type="number"
+                        placeholder="Height (cm)"
+                        {...field}
+                        className="pl-10"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <div className="relative">
+                      <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Input
+                        type="number"
+                        placeholder="Weight (kg)"
+                        {...field}
+                        className="pl-10"
+                      />
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           <Button className="mt-4" disabled={loading}>
             {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -213,29 +376,65 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 export default function LoginPage() {
   const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
+  const { user, isUserLoading } = useUser();
 
-  // ✅ FIXED: redirect ONLY if user is on login page
-  const handleAuthSuccess = () => {
-    if (window.location.pathname === "/login") {
+  // If user is already logged in, redirect them away from the login page
+  useEffect(() => {
+    if (!isUserLoading && user) {
       router.replace("/symptoms");
     }
+  }, [user, isUserLoading, router]);
+
+  const handleAuthSuccess = () => {
+    router.replace("/symptoms");
   };
 
+  // While checking user auth state, show a loader
+  if (isUserLoading || user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-green-50">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100">
-      <div className={`container-main ${rightPanel ? "right-panel-active" : ""}`}>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
+      <div
+        className={`container-main ${rightPanel ? "right-panel-active" : ""}`}
+      >
         <SignUpForm onAuthSuccess={handleAuthSuccess} />
         <SignInForm onAuthSuccess={handleAuthSuccess} />
 
         <div className="overlay-container">
           <div className="overlay">
             <div className="overlay-panel overlay-left">
-              <h2>Welcome Back!</h2>
-              <Button onClick={() => setRightPanel(false)}>Sign In</Button>
+              <h1 className="text-4xl font-bold">Welcome Back!</h1>
+              <p className="mt-4 text-center">
+                Sign in to continue your health journey and access your
+                personal dashboard.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 bg-transparent border-white text-white hover:bg-white/20"
+                onClick={() => setRightPanel(false)}
+              >
+                Sign In
+              </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h2>Hello Friend!</h2>
-              <Button onClick={() => setRightPanel(true)}>Sign Up</Button>
+              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
+              <p className="mt-4 text-center">
+                New here? Create an account to get personalized health insights
+                and tracking.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 bg-transparent border-white text-white hover:bg-white/20"
+                onClick={() => setRightPanel(true)}
+              >
+                Sign Up
+              </Button>
             </div>
           </div>
         </div>
@@ -245,3 +444,4 @@ export default function LoginPage() {
 }
 // force fresh vercel build
 
+    
