@@ -62,7 +62,6 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       });
       onAuthSuccess();
     } catch (error: any) {
-      console.error("Sign in error:", error.code);
       toast({
         variant: "destructive",
         title: "Sign In Failed",
@@ -163,7 +162,6 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         onAuthSuccess();
       }
     } catch (error: any) {
-      console.error("Sign up error:", error.code);
       if (error.code === "auth/email-already-in-use") {
         toast({
           variant: "destructive",
@@ -312,8 +310,8 @@ export default function LoginPage() {
   useEffect(() => {
     // This effect handles signing out any existing user to ensure
     // the login page is always presented for a new session.
-    if (!isUserLoading && user) {
-      // We sign out both anonymous and non-anonymous users to ensure a clean slate.
+    if (!isUserLoading && user && !user.isAnonymous) {
+      // We sign out non-anonymous users to ensure a clean slate.
       signOut(auth);
     }
   }, [user, isUserLoading, auth]);
@@ -322,7 +320,7 @@ export default function LoginPage() {
     router.replace("/symptoms");
   };
 
-  if (isUserLoading || user) {
+  if (isUserLoading || (user && !user.isAnonymous)) {
     // While checking auth state or if a user is still present before sign-out completes,
     // show a loading state to prevent flicker.
     return (
