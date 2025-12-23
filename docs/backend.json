@@ -1,0 +1,66 @@
+{
+  "entities": {
+    "UserProfile": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserProfile",
+      "type": "object",
+      "description": "Represents a user's profile within the Swasthya Margdarshan application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserProfile entity."
+        },
+        "username": {
+          "type": "string",
+          "description": "The user's chosen username."
+        },
+        "age": {
+          "type": "number",
+          "description": "The user's age in years."
+        },
+        "height": {
+          "type": "number",
+          "description": "The user's height in centimeters."
+        },
+        "weight": {
+          "type": "number",
+          "description": "The user's weight in kilograms."
+        }
+      },
+      "required": [
+        "id",
+        "username",
+        "age",
+        "height",
+        "weight"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/profile",
+        "definition": {
+          "entityName": "UserProfile",
+          "schema": {
+            "$ref": "#/backend/entities/UserProfile"
+          },
+          "description": "Stores user profile information. Includes denormalized 'userId' from auth token for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The Firebase Authentication UID of the user."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to store user profile data after successful sign-up. It leverages path-based ownership for user data, ensuring secure access and simple security rules. The `/users/{userId}/profile` collection stores each user's profile information, identified by their unique Firebase Authentication UID. This approach achieves Authorization Independence, as access control is directly tied to the path and the authenticated user's ID (`request.auth.uid`), eliminating the need for `get()` calls in security rules. This structure also supports the QAPs by ensuring that list operations are scoped to individual users. All documents in the `profile` subcollection share the same security requirements: only the authenticated user can read or write their own profile, simplifying the security posture."
+  }
+}
