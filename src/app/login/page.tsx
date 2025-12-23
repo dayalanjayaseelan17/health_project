@@ -17,14 +17,13 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Ruler, Weight, Mail, Lock } from "lucide-react";
-import {
-  useAuth,
-  useUser,
-  setDocumentNonBlocking,
-} from "@/firebase";
+import { useAuth, useUser, setDocumentNonBlocking } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useFirestore } from "@/firebase/provider";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from "firebase/auth";
 import "./login.css";
 
 // Schemas for validation
@@ -138,6 +137,9 @@ const SignUpForm = () => {
       username: "",
       email: "",
       password: "",
+      age: undefined,
+      height: undefined,
+      weight: undefined,
     },
   });
 
@@ -165,7 +167,7 @@ const SignUpForm = () => {
       }
     } catch (error: any) {
       console.error("Sign up error:", error.code);
-      if (error.code === 'auth/email-already-in-use') {
+      if (error.code === "auth/email-already-in-use") {
         toast({
           variant: "destructive",
           title: "Sign Up Failed",
@@ -260,6 +262,7 @@ const SignUpForm = () => {
                         placeholder="Age"
                         className="pl-9"
                         {...field}
+                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
                   </div>
@@ -280,6 +283,7 @@ const SignUpForm = () => {
                         placeholder="Height (cm)"
                         className="pl-9"
                         {...field}
+                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
                   </div>
@@ -300,6 +304,7 @@ const SignUpForm = () => {
                         placeholder="Weight (kg)"
                         className="pl-9"
                         {...field}
+                        onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                       />
                     </FormControl>
                   </div>
