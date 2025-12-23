@@ -1,90 +1,19 @@
 /**
- * Core Philosophy: This ruleset implements a strict user-ownership security model. All data is segregated into user-specific paths, ensuring that a user can only ever access their own information. The default posture is to deny all access unless explicitly granted.
+ * @name Hackathon Development Rules
+ * @description These rules are intentionally open for a hackathon environment.
+ * They allow all read and write operations to facilitate rapid development and
+ * prevent permission-related blockers.
  *
- * Data Structure: All application data is stored under the top-level 'users' collection. Each user's data is contained within a document named after their Firebase Authentication UID (`/users/{userId}`). This document contains a `profile` subcollection where their personal information is stored.
- *
- * Key Security Decisions:
- * - Strict Ownership: Users can only read, write, and delete their own profile data. Cross-user access is strictly forbidden.
- * - Public Username Query: A specific rule allows unauthenticated users to perform a collection group query on 'profile' collections, but ONLY when filtering by the 'username' field. This is essential and secure for the username-based login flow.
- * - No User Listing: It is impossible to list all documents in the top-level `/users` collection, preventing enumeration of the application's user base.
- * - Path-Based Security: Authorization is primarily determined by the document path (`/users/{userId}/...`), making rules fast and simple.
- *
- * Denormalization for Authorization: To ensure efficient and secure authorization, a user's UID is denormalized into their profile document. The `UserProfile` entity contains an `id` field that MUST match the `{userId}` from the document path. This rule is enforced on document creation to establish the ownership link and made immutable on updates to prevent re-assigning ownership.
- *
- * Structural Segregation: Not applicable in this model, as all data is considered private to the user. There is no concept of public or shared data.
+ * WARNING: These rules are NOT secure for a production application.
+ * Before deploying to a live environment, you should implement strict,
+ * user-based security rules to protect user data.
  */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper Functions for Reusable Logic
-
-    /**
-     * Checks if the user is authenticated.
-     */
-    function isSignedIn() {
-      return request.auth != null;
-    }
-
-    /**
-     * Validates that the requesting user's UID matches the user ID in the path.
-     * This is the primary function for enforcing user ownership.
-     * @param userId The user ID from the document path.
-     */
-    function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
-    }
-    
-    /**
-     * Combines ownership check with a check for the document's existence.
-     * CRITICAL for preventing writes to non-existent documents.
-     * @param userId The user ID from the document path.
-     */
-    function isExistingOwner(userId) {
-      return isOwner(userId) && resource != null;
-    }
-    
-    /**
-     * Enforces that the denormalized owner ID field is correctly set on creation.
-     * This establishes the critical link between the document data and its owner.
-     * @param userId The user ID from the document path.
-     */
-    function isCreatingOwnProfile(userId) {
-      return isOwner(userId) && request.resource.data.id == userId;
-    }
-    
-    /**
-     * Enforces that the denormalized owner ID field cannot be changed after creation.
-     * This prevents a document from being 're-assigned' to a different owner.
-     */
-    function isImmutableOwnerId() {
-      return request.resource.data.id == resource.data.id;
-    }
-
-    /**
-     * @description Allows a public, unauthenticated query across all 'profile' subcollections,
-     * but ONLY for the purpose of finding a user by their username for the login flow.
-     * This is the only public read operation in the entire ruleset.
-     */
-    match /{path=**}/profile/{profileId} {
-      allow list: if request.query.get("where")[0][1] == "username";
-    }
-
-    /**
-     * @description Controls access to a user's personal profile documents.
-     * @path /users/{userId}/profile/{profileId}
-     * @allow (create) An authenticated user creating their own profile document, correctly setting their own UID in the 'id' field.
-     * @deny (create) An authenticated user trying to create a profile document for another user.
-     * @principle Restricts access to a user's own data tree and validates relational integrity.
-     */
-    match /users/{userId}/profile/{profileId} {
-      allow get: if isOwner(userId);
-      // 'list' is handled by the public rule above for username lookups.
-      // A specific owner can list their own profile documents if needed (though there's typically only one).
-      allow list: if isOwner(userId);
-      allow create: if isCreatingOwnProfile(userId);
-      allow update: if isExistingOwner(userId) && isImmutableOwnerId();
-      allow delete: if isExistingOwner(userId);
+    // Allow all reads and writes to any document in the database.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
