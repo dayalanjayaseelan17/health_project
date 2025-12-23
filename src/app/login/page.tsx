@@ -52,7 +52,7 @@ const signUpSchema = z.object({
     .min(3, { message: "Username must be at least 3 characters." }),
   email: z.string().email({ message: "Please enter a valid email." }),
   password: z
-    .string()
+    .string()_
     .min(6, { message: "Password must be at least 6 characters." }),
   age: z.coerce.number().min(1).max(120),
   height: z.coerce.number().min(50, { message: "Height in cm" }),
@@ -406,30 +406,25 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 /* ---------------- PAGE ---------------- */
 
 export default function LoginPage() {
-  const [isClient, setIsClient] = useState(false);
   const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
   // If user is already logged in, redirect them away from the login page
   useEffect(() => {
-    if (isClient && !isUserLoading && user) {
+    if (!isUserLoading && user) {
       router.replace("/symptoms");
     }
-  }, [user, isUserLoading, router, isClient]);
+  }, [user, isUserLoading, router]);
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
   };
 
-  // While checking user auth state or if not on client, show a loader
-  if (!isClient || isUserLoading || (isClient && user)) {
+  // While checking user auth state, show a loader
+  if (isUserLoading || user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100">
+      <div className="flex min-h-screen items-center justify-center bg-green-50">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
       </div>
     );
@@ -448,8 +443,7 @@ export default function LoginPage() {
             <div className="overlay-panel overlay-left">
               <h1 className="text-4xl font-bold">Welcome Back!</h1>
               <p className="mt-4 text-center">
-                Your health journey is important. Sign in to continue tracking
-                your well-being.
+                To keep connected with us please login with your personal info
               </p>
               <Button
                 variant="outline"
@@ -460,10 +454,9 @@ export default function LoginPage() {
               </Button>
             </div>
             <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">New Here?</h1>
+              <h1 className="text-4xl font-bold">Hello, Friend!</h1>
               <p className="mt-4 text-center">
-                Join our community to get personalized health insights and start
-                your path to better health.
+                Enter your personal details and start your journey with us
               </p>
               <Button
                 variant="outline"
