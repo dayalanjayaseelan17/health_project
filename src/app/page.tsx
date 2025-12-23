@@ -76,7 +76,7 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
       <div className="mb-10 text-center">
         <h1 className="text-4xl font-bold text-primary md:text-5xl">
-          Swasthya Margdarshan
+          Healcure
         </h1>
         <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">
           Your simple guide to better health. Choose an option to get started.

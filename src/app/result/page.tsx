@@ -8,8 +8,9 @@ import {
   type DiagnoseSymptomsInput,
 } from "@/ai/flows/diagnose-symptoms-flow";
 import { AlertTriangle, HeartPulse, ShieldCheck, MapPinned } from "lucide-react";
-import { useDoc, useUser, useFirestore, useMemoFirebase } from "@/firebase";
+import { useDoc, useUser, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
+import { Button } from "@/components/ui/button";
 
 type RiskLevel = "Green" | "Yellow" | "Red";
 type ProblemType = "Heart" | "Brain" | "Skin" | "Bone" | "General";
@@ -97,6 +98,7 @@ export default function ResultPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const auth = useAuth();
 
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
@@ -119,8 +121,8 @@ export default function ResultPage() {
     if (isUserLoading || isProfileLoading || !user) return;
 
     const fetchResult = async () => {
-      let description = null;
-      let image = null;
+      let description: string | null = null;
+      let image: string | null = null;
 
       // Safely get items from localStorage
       try {
@@ -154,8 +156,8 @@ export default function ResultPage() {
 
         const res = await diagnoseSymptoms(input);
         
-        if (!res || typeof res !== 'object') {
-           throw new Error("AI did not return a valid analysis.");
+        if (!res || typeof res !== 'object' || !res.riskLevel) {
+           throw new Error("AI did not return a valid analysis. Please try again.");
         }
 
         setResult(res);
@@ -165,8 +167,8 @@ export default function ResultPage() {
         setLoading(false);
         // Clean up localStorage after fetching
         try {
-          localStorage.removeItem("symptomDescription");
-          localStorage.removeItem("symptomImage");
+          if (description) localStorage.removeItem("symptomDescription");
+          if (image) localStorage.removeItem("symptomImage");
         } catch (e) {
           console.error("Failed to clear localStorage:", e);
         }
@@ -176,7 +178,20 @@ export default function ResultPage() {
     fetchResult();
   }, [user, isUserLoading, isProfileLoading, userProfile]);
 
-  if (loading || isUserLoading || isProfileLoading) {
+  const handleNextStep = () => {
+    if (user?.isAnonymous) {
+      router.push("/symptoms");
+    } else {
+      router.push("/dashboard");
+    }
+  }
+
+  const handleSignOut = () => {
+    auth.signOut();
+    router.push('/login');
+  }
+
+  if (loading || isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <div className="w-16 h-16 border-4 border-dashed border-green-600 rounded-full animate-spin" />
@@ -193,12 +208,12 @@ export default function ResultPage() {
         <AlertTriangle className="h-16 w-16 text-red-500 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Analysis Failed</h1>
         <p className="text-red-600 max-w-md mb-6">{error}</p>
-        <button
+        <Button
           onClick={() => router.push("/symptoms")}
-          className="mt-4 text-gray-600 underline"
+          variant="outline"
         >
           Start Over
-        </button>
+        </Button>
       </div>
     );
   }
@@ -206,7 +221,7 @@ export default function ResultPage() {
   if (!result) return null;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
       <ResultCard
         level={result.riskLevel}
         analysis={result.analysis}
@@ -214,26 +229,30 @@ export default function ResultPage() {
         nextAction={result.nextAction}
       />
 
-      {(result.riskLevel === "Yellow" || result.riskLevel === "Red") && result.problemType && (
-        <button
+      {result.hospitalRequired && (
+        <Button
           onClick={() =>
-            window.open(buildGoogleMapsUrl(result.problemType!), "_blank")
+            window.open(buildGoogleMapsUrl(result.problemType as ProblemType), "_blank")
           }
           className="mt-6 w-full max-w-md bg-blue-600 text-white py-3 rounded-lg text-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700"
         >
           <MapPinned />
           Find Nearby Specialist Hospital
-        </button>
+        </Button>
       )}
 
-      <button
-        onClick={() => router.push("/symptoms")}
-        className="mt-4 text-gray-600 underline"
-      >
-        Start Over
-      </button>
+      <div className="mt-6 flex flex-col sm:flex-row gap-4 w-full max-w-md">
+        <Button onClick={handleNextStep} className="w-full">
+            {user?.isAnonymous ? 'Check Another Symptom' : 'Go to Dashboard'}
+        </Button>
+        {user?.isAnonymous && (
+           <Button onClick={handleSignOut} variant="outline" className="w-full">
+            Sign In / Sign Up
+          </Button>
+        )}
+      </div>
 
-      <p className="mt-6 text-xs text-gray-500 text-center max-w-md">
+      <p className="mt-8 text-xs text-gray-500 text-center max-w-md">
         This is AI-assisted guidance for a hackathon project and not a medical
         diagnosis. Always consult a healthcare professional.
       </p>
