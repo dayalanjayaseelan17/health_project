@@ -1,25 +1,24 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center bg-green-50">
+    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-green-700 mb-4">
-          Health Guidance
+        <h1 className="text-4xl md:text-5xl font-bold text-primary mb-4">
+          Swasthya Margdarshan
         </h1>
 
-        <p className="text-gray-600 mb-8">
-          Simple health help for everyone
+        <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">
+          Your simple guide to better health. Get instant, AI-powered guidance for your health concerns, designed for everyone.
         </p>
 
-        <Link href="/details">
-          <button
-            className="px-10 py-4 text-xl rounded-full bg-green-600 text-white hover:bg-green-700"
-          >
-            Start
-          </button>
+        <Link href="/login">
+          <Button size="lg" className="rounded-full text-lg px-10 py-6">
+            Get Started
+          </Button>
         </Link>
       </div>
     </main>
