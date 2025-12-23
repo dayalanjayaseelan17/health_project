@@ -16,7 +16,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
-import { User, Calendar, Ruler, Weight, Mail, Lock } from "lucide-react";
+import { User, Calendar, Ruler, Weight, Mail, Lock, Loader2 } from "lucide-react";
 import { useAuth, useUser } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useFirestore, setDocumentNonBlocking } from "@/firebase";
@@ -46,15 +46,17 @@ const signInSchema = z.object({
 const SignInForm = () => {
   const auth = useAuth();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: { email: "", password: "" },
   });
 
   async function onSubmit(values: z.infer<typeof signInSchema>) {
+    setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      // onAuthStateChanged will handle the redirect
+      // onAuthStateChanged will handle the redirect, so we don't need to do anything here on success.
     } catch (error: any) {
       console.error("Sign in error:", error.code);
       toast({
@@ -62,6 +64,8 @@ const SignInForm = () => {
         title: "Sign In Failed",
         description: "Incorrect email or password. Please try again.",
       });
+    } finally {
+      setIsLoading(false);
     }
   }
 
@@ -101,8 +105,9 @@ const SignInForm = () => {
          <a href="#" className="text-sm text-muted-foreground hover:text-primary block text-right">
             Forgot your password?
           </a>
-        <Button type="submit" className="w-full">
-          Sign In
+        <Button type="submit" className="w-full" disabled={isLoading}>
+          {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isLoading ? "Authenticating..." : "Sign In"}
         </Button>
       </form>
     </Form>
@@ -113,6 +118,7 @@ const SignUpForm = () => {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
@@ -127,6 +133,7 @@ const SignUpForm = () => {
   });
 
   async function onSubmit(values: z.infer<typeof signUpSchema>) {
+    setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
@@ -145,6 +152,7 @@ const SignUpForm = () => {
         };
         const docRef = doc(firestore, `users/${user.uid}/profile/${user.uid}`);
         setDocumentNonBlocking(docRef, userProfile, { merge: true });
+        // onAuthStateChanged will handle redirect
       }
     } catch (error: any) {
       console.error("Sign up error:", error.code);
@@ -161,6 +169,8 @@ const SignUpForm = () => {
           description: "An unexpected error occurred. Please try again.",
         });
       }
+    } finally {
+        setIsLoading(false);
     }
   }
 
@@ -275,8 +285,9 @@ const SignUpForm = () => {
                 />
             </div>
             
-          <Button type="submit" className="w-full !mt-6">
-            Sign Up
+          <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoading ? "Creating Account..." : "Sign Up"}
           </Button>
         </form>
       </Form>
@@ -310,7 +321,10 @@ export default function LoginPage() {
   if (isUserLoading || (user && !user.isAnonymous)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
-        <p>Loading...</p>
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          <p className="mt-4 text-lg text-muted-foreground">Loading session...</p>
+        </div>
       </div>
     );
   }
