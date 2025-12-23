@@ -95,24 +95,31 @@ export default function ResultPage() {
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
+    // Don't fetch profile for anonymous users as it won't exist.
+    if (user.isAnonymous) return null;
     return doc(firestore, `users/${user.uid}/profile/${user.uid}`);
-  }, [firestore, user?.uid]);
+  }, [firestore, user?.uid, user?.isAnonymous]);
 
   const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
 
   useEffect(() => {
-    const getResult = async () => {
-      // Wait for user and profile to be loaded
-      if (isUserLoading || isProfileLoading) {
-        return;
-      }
-      
-      // If no user, redirect to login
-      if (!user) {
-        router.replace("/login");
-        return;
-      }
+    // This effect handles authentication and redirection.
+    if (isUserLoading) {
+      return; // Wait until auth state is determined
+    }
+    if (!user) {
+      router.replace("/login");
+    }
+  }, [user, isUserLoading, router]);
+  
+  useEffect(() => {
+    // This effect handles fetching the diagnosis result.
+    // It should only run after we know we have a user.
+    if (isUserLoading || isProfileLoading || !user) {
+      return;
+    }
 
+    const getResult = async () => {
       setLoading(true);
       setError(null);
 
@@ -129,12 +136,12 @@ export default function ResultPage() {
         const input: DiagnoseSymptomsInput = {
           description: symptomDescription || "",
           photoDataUri: symptomImage || undefined,
-          userDetails: userProfile ? {
+          userDetails: user.isAnonymous ? {} : (userProfile ? {
             name: userProfile.username,
             age: String(userProfile.age),
             weight: String(userProfile.weight),
             gender: userProfile.gender || "Not specified",
-          } : {},
+          } : {}),
         };
 
         const diagnosisResult = await diagnoseSymptoms(input);
@@ -148,7 +155,7 @@ export default function ResultPage() {
     };
 
     getResult();
-  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
+  }, [user, isUserLoading, userProfile, isProfileLoading]);
 
   const showLoading = loading || isUserLoading || isProfileLoading;
 
