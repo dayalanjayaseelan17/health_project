@@ -17,15 +17,13 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { User, Calendar, Ruler, Weight, Mail, Lock, Loader2 } from "lucide-react";
-import { useAuth, useUser } from "@/firebase";
+import { useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { useFirestore, setDocumentNonBlocking } from "@/firebase";
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-
 
 // Schemas for validation
 const signUpSchema = z.object({
@@ -73,17 +71,17 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-center justify-center h-full px-12 text-center">
+        <h1 className="text-2xl font-bold text-primary mb-4">Sign In</h1>
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Email</FormLabel>
+            <FormItem className="w-full mb-2">
               <FormControl>
                  <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="email" placeholder="Email" className="pl-9" {...field} />
+                    <Input type="email" placeholder="Email" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                   </div>
               </FormControl>
               <FormMessage />
@@ -94,20 +92,21 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
           control={form.control}
           name="password"
           render={({ field }) => (
-            <FormItem>
-              <FormLabel>Password</FormLabel>
+            <FormItem className="w-full mb-2">
+               <FormControl>
                <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="password" placeholder="Password" className="pl-9" {...field} />
+                    <Input type="password" placeholder="Password" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                 </div>
+                </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-         <a href="#" className="text-sm text-muted-foreground hover:text-primary block text-right">
+         <a href="#" className="text-sm text-muted-foreground hover:text-primary mb-4">
             Forgot your password?
           </a>
-        <Button type="submit" className="w-full" disabled={isLoading}>
+        <Button type="submit" className="w-40 rounded-full" disabled={isLoading}>
           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           {isLoading ? "Authenticating..." : "Sign In"}
         </Button>
@@ -161,7 +160,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         onAuthSuccess();
       }
     } catch (error: any) {
-      if (error.code === "auth/email-already-in-use") {
+       if (error.code === "auth/email-already-in-use") {
         toast({
           variant: "destructive",
           title: "Sign Up Failed",
@@ -181,17 +180,19 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   return (
      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col items-center justify-center h-full px-12 text-center">
+            <h1 className="text-2xl font-bold text-primary mb-4">Create Account</h1>
           <FormField
               control={form.control}
               name="username"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Username</FormLabel>
+                <FormItem className="w-full mb-2">
+                   <FormControl>
                    <div className="relative">
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input placeholder="Username" className="pl-9" {...field} />
+                    <Input placeholder="Username" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                   </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -200,12 +201,13 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               control={form.control}
               name="email"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
+                <FormItem className="w-full mb-2">
+                  <FormControl>
                    <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="email" placeholder="Email" className="pl-9" {...field} />
+                    <Input type="email" placeholder="Email" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                   </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -214,34 +216,36 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               control={form.control}
               name="password"
               render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
+                <FormItem className="w-full mb-2">
+                  <FormControl>
                    <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input type="password" placeholder="Password" className="pl-9" {...field} />
+                    <Input type="password" placeholder="Password" className="pl-9 bg-gray-100 border-none h-10" {...field} />
                   </div>
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            <div className="flex gap-3">
+            <div className="flex gap-2 w-full mb-2">
                 <FormField
                 control={form.control}
                 name="age"
                 render={({ field }) => (
                     <FormItem className="flex-1">
-                    <FormLabel>Age</FormLabel>
+                    <FormControl>
                     <div className="relative">
                         <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="number"
                             placeholder="Age"
-                            className="pl-9"
+                            className="pl-9 bg-gray-100 border-none h-10"
                             {...field}
                             value={field.value === undefined ? '' : field.value}
                             onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                         />
                     </div>
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
@@ -251,18 +255,19 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 name="height"
                 render={({ field }) => (
                     <FormItem className="flex-1">
-                     <FormLabel>Height (cm)</FormLabel>
+                    <FormControl>
                     <div className="relative">
                         <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="number"
-                            placeholder="Height"
-                            className="pl-9"
+                            placeholder="Height (cm)"
+                            className="pl-9 bg-gray-100 border-none h-10"
                             {...field}
                             value={field.value === undefined ? '' : field.value}
                             onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                         />
                     </div>
+                     </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
@@ -272,27 +277,28 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 name="weight"
                 render={({ field }) => (
                     <FormItem className="flex-1">
-                    <FormLabel>Weight (kg)</FormLabel>
+                    <FormControl>
                     <div className="relative">
                         <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="number"
-                            placeholder="Weight"
-                            className="pl-9"
+                            placeholder="Weight (kg)"
+                            className="pl-9 bg-gray-100 border-none h-10"
                             {...field}
                             value={field.value === undefined ? '' : field.value}
                             onChange={(e) => field.onChange(e.target.value === '' ? undefined : +e.target.value)}
                         />
                     </div>
+                    </FormControl>
                     <FormMessage />
                     </FormItem>
                 )}
                 />
             </div>
             
-          <Button type="submit" className="w-full !mt-6" disabled={isLoading}>
+          <Button type="submit" className="w-40 rounded-full mt-4" disabled={isLoading}>
             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isLoading ? "Creating Account..." : "Sign Up"}
+            {isLoading ? "Creating..." : "Sign Up"}
           </Button>
         </form>
       </Form>
@@ -301,47 +307,62 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
 
 export default function LoginPage() {
-  const [isSignIn, setIsSignIn] = useState(false);
+  const [isRightPanelActive, setIsRightPanelActive] = useState(false);
   const router = useRouter();
-  const { user, isUserLoading } = useUser();
 
   const handleAuthSuccess = () => {
     router.replace("/symptoms");
   };
 
-  if (isUserLoading) {
-    // While checking auth state, show a loading state to prevent flicker.
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
-        <div className="flex flex-col items-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="mt-4 text-lg text-muted-foreground">Preparing session...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-            <CardTitle className="text-2xl font-bold text-primary">
-                {isSignIn ? "Welcome Back!" : "Create an Account"}
-            </CardTitle>
-            <CardDescription>
-                {isSignIn ? "Sign in to continue tracking your health." : "Get your health checked securely."}
-            </CardDescription>
-        </CardHeader>
-        <CardContent>
-            {isSignIn ? <SignInForm onAuthSuccess={handleAuthSuccess} /> : <SignUpForm onAuthSuccess={handleAuthSuccess} />}
-            <div className="mt-6 text-center text-sm">
-                {isSignIn ? "Don't have an account?" : "Already have an account?"}
-                <Button variant="link" className="pl-1" onClick={() => setIsSignIn(!isSignIn)}>
-                    {isSignIn ? "Sign Up" : "Sign In"}
-                </Button>
+      <div 
+        className={`relative overflow-hidden rounded-2xl shadow-2xl bg-white w-full max-w-4xl min-h-[520px] 
+                    transition-all duration-700 ease-in-out
+                    ${isRightPanelActive ? 'right-panel-active' : ''}`}
+        id="container-main"
+      >
+
+        {/* Sign Up Form */}
+        <div className="absolute top-0 left-0 h-full w-1/2 transition-all duration-700 ease-in-out opacity-0 z-10
+                      group-[.right-panel-active]:opacity-100 group-[.right-panel-active]:translate-x-full group-[.right-panel-active]:z-20">
+          <SignUpForm onAuthSuccess={handleAuthSuccess} />
+        </div>
+
+        {/* Sign In Form */}
+        <div className="absolute top-0 left-0 h-full w-1/2 transition-all duration-700 ease-in-out z-20
+                      group-[.right-panel-active]:translate-x-full">
+           <SignInForm onAuthSuccess={handleAuthSuccess} />
+        </div>
+        
+        {/* Overlay */}
+        <div className="absolute top-0 left-1/2 w-1/2 h-full overflow-hidden transition-transform duration-700 ease-in-out z-50
+                      group-[.right-panel-active]:-translate-x-full">
+          <div className="relative -left-full h-full w-[200%] bg-gradient-to-r from-primary to-green-400 text-white
+                        transition-transform duration-700 ease-in-out
+                        group-[.right-panel-active]:translate-x-1/2">
+            
+            {/* Overlay Left */}
+            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2
+                          transition-transform duration-700 ease-in-out -translate-x-[20%]
+                          group-[.right-panel-active]:translate-x-0">
+                <h1 className="text-2xl font-bold">Welcome Back!</h1>
+                <p className="text-sm mt-2 mb-4">To keep connected with us please login with your personal info</p>
+                <Button variant="outline" className="bg-transparent border-white text-white rounded-full w-40" onClick={() => setIsRightPanelActive(false)}>Sign In</Button>
             </div>
-        </CardContent>
-      </Card>
+
+            {/* Overlay Right */}
+            <div className="absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0
+                          transition-transform duration-700 ease-in-out translate-x-0
+                          group-[.right-panel-active]:-translate-x-[20%]">
+                <h1 className="text-2xl font-bold">Hello, Friend!</h1>
+                <p className="text-sm mt-2 mb-4">Enter your personal details and start your journey with us</p>
+                <Button variant="outline" className="bg-transparent border-white text-white rounded-full w-40" onClick={() => setIsRightPanelActive(true)}>Sign Up</Button>
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }

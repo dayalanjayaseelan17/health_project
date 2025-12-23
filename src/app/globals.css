@@ -57,3 +57,85 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom styles for the animation */
+@layer utilities {
+  .right-panel-active .group-\[\.right-panel-active\]\:translate-x-full {
+      transform: translateX(100%);
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:opacity-100 {
+      opacity: 1;
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:z-20 {
+      z-index: 20;
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:-translate-x-full {
+      transform: translateX(-100%);
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:translate-x-1\/2 {
+      transform: translateX(50%);
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:translate-x-0 {
+      transform: translateX(0);
+  }
+  .right-panel-active .group-\[\.right-panel-active\]\:-translate-x-\[20\%\] {
+      transform: translateX(-20%);
+  }
+}
+
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:translate-x-full {
+  transform: translateX(100%);
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:opacity-100 {
+  opacity: 1;
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:z-20 {
+  z-index: 5;
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:-translate-x-full {
+  transform: translateX(-100%);
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:translate-x-1\/2 {
+  transform: translateX(50%);
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:translate-x-0 {
+  transform: translateX(0);
+}
+#container-main.right-panel-active .group-\[\.right-panel-active\]\:-translate-x-\[20\%\] {
+  transform: translateX(-20%);
+}
+
+#container-main.right-panel-active > div:nth-child(1) {
+  transform: translateX(100%);
+  opacity: 1;
+  z-index: 5;
+  animation: show 0.7s;
+}
+
+@keyframes show {
+  0%, 49.99% {
+    opacity: 0;
+    z-index: 1;
+  }
+  
+  50%, 100% {
+    opacity: 1;
+    z-index: 5;
+  }
+}
+
+#container-main.right-panel-active > div:nth-child(2) {
+  transform: translateX(100%);
+}
+#container-main.right-panel-active > div:nth-child(3) {
+  transform: translateX(-100%);
+}
+#container-main.right-panel-active > div:nth-child(3) > div {
+  transform: translateX(50%);
+}
+#container-main.right-panel-active > div:nth-child(3) > div > div:nth-child(1) {
+  transform: translateX(0);
+}
+#container-main.right-panel-active > div:nth-child(3) > div > div:nth-child(2) {
+  transform: translateX(-20%);
+}
