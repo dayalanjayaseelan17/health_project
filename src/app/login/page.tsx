@@ -24,7 +24,6 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from "firebase/auth";
-import "./login.css";
 
 // Schemas for validation
 const signUpSchema = z.object({
@@ -350,34 +349,47 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4 font-body">
       <div
         className={cn(
-          "container-main",
+          "relative overflow-hidden rounded-lg shadow-lg bg-white w-full max-w-4xl min-h-[520px] transition-all duration-700 ease-in-out",
           isRightPanelActive && "right-panel-active"
         )}
+        id="container-main"
       >
-        <SignUpForm />
-        <SignInForm />
+        {/* Sign-Up Form */}
+        <div className={cn("absolute top-0 h-full left-0 w-1/2 opacity-0 z-[1] transition-all duration-700 ease-in-out", {"right-panel-active:opacity-100 right-panel-active:translate-x-full right-panel-active:z-[5]": isRightPanelActive})}>
+          <SignUpForm />
+        </div>
+        
+        {/* Sign-In Form */}
+         <div className={cn("absolute top-0 h-full left-0 w-1/2 z-[2] transition-all duration-700 ease-in-out", {"right-panel-active:translate-x-full": isRightPanelActive})}>
+          <SignInForm />
+        </div>
 
-        <div className="overlay-container">
-          <div className="overlay">
-            <div className="overlay-panel overlay-left">
-              <h1 className="text-3xl font-bold mb-4">Welcome Back!</h1>
+        {/* Overlay */}
+        <div className={cn("absolute top-0 left-1/2 w-1/2 h-full overflow-hidden z-[100] transition-transform duration-700 ease-in-out", {"right-panel-active:-translate-x-full": isRightPanelActive})}>
+          <div className={cn("bg-gradient-to-r from-green-600 to-green-500 text-white relative -left-full h-full w-[200%] transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-1/2": isRightPanelActive})}>
+            
+            {/* Overlay Left */}
+            <div className={cn("absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-0": isRightPanelActive, "-translate-x-1/5": !isRightPanelActive})}>
+               <h1 className="text-3xl font-bold mb-4">Welcome Back!</h1>
               <p className="mb-6">
                 Login to continue tracking your health securely.
               </p>
               <Button
                 variant="outline"
-                className="ghost"
+                className="bg-transparent border-white text-white"
                 type="button"
                 onClick={() => setIsRightPanelActive(false)}
               >
                 Sign In
               </Button>
             </div>
-            <div className="overlay-panel overlay-right">
-              <h1 className="text-3xl font-bold mb-4">
+
+            {/* Overlay Right */}
+            <div className={cn("absolute flex items-center justify-center flex-col px-10 text-center top-0 h-full w-1/2 right-0 transition-transform duration-700 ease-in-out", {"right-panel-active:translate-x-1/5": isRightPanelActive})}>
+               <h1 className="text-3xl font-bold mb-4">
                 Get Your Health Checked
               </h1>
               <p className="mb-6">
@@ -386,7 +398,7 @@ export default function LoginPage() {
               </p>
               <Button
                 variant="outline"
-                className="ghost"
+                className="bg-transparent border-white text-white"
                 type="button"
                 onClick={() => setIsRightPanelActive(true)}
               >
