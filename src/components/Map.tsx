@@ -28,6 +28,7 @@ const Map: React.FC = () => {
           center: userLocation,
           zoom: 13,
           disableDefaultUI: true,
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_ID, // Required for Advanced Markers
           styles: [
             {
               featureType: "poi.business",
