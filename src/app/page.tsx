@@ -8,7 +8,7 @@ import { useAuth } from "@/firebase";
 import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { HeartPulse, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { motion, useAnimation } from "framer-motion";
+import { motion, useAnimation, PanInfo } from "framer-motion";
 import { Button } from "@/components/ui/button";
 
 
@@ -26,16 +26,74 @@ const FeatureCard = ({
   buttonText: string;
   onClick: () => void;
   isLoading: boolean;
-}) => (
-  <div className="flex h-full flex-col items-center justify-between rounded-xl bg-white/80 p-6 text-center shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
-    <div className="mb-4">{icon}</div>
-    <h2 className="mb-2 text-2xl font-bold text-primary">{title}</h2>
-    <p className="mb-6 flex-grow text-muted-foreground">{description}</p>
-    <Button onClick={onClick} disabled={isLoading} className="rounded-full px-8 py-6 text-base">
-       {isLoading ? "Please wait..." : buttonText}
-    </Button>
-  </div>
-);
+}) => {
+  const controls = useAnimation();
+
+  const handleHoverStart = () => {
+    controls.stop();
+    controls.start({
+      scale: [1, 1.2, 0.9, 1],
+      transition: { duration: 0.8, ease: "easeInOut" }
+    });
+  };
+
+  return (
+    <div className="flex h-full flex-col items-center justify-between rounded-xl bg-white/80 p-6 text-center shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
+      <div className="mb-4">{icon}</div>
+      <h2 className="mb-2 text-2xl font-bold text-primary">{title}</h2>
+      <p className="mb-6 flex-grow text-muted-foreground">{description}</p>
+      <div className="button--bubble__container">
+         <button
+            onClick={onClick}
+            disabled={isLoading}
+            className="button button--bubble"
+            onMouseEnter={handleHoverStart}
+          >
+            {isLoading ? "Please wait..." : buttonText}
+          </button>
+        <span className="button--bubble__effect-container">
+          <motion.span
+            className="circle top-left"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+          ></motion.span>
+          <motion.span
+            className="circle top-left"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+            transition={{ delay: 0.1 }}
+          ></motion.span>
+          <motion.span
+            className="circle top-left"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+            transition={{ delay: 0.2 }}
+          ></motion.span>
+
+          <span className="button effect-button"></span>
+
+          <motion.span
+            className="circle bottom-right"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+          ></motion.span>
+          <motion.span
+            className="circle bottom-right"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+            transition={{ delay: 0.1 }}
+          ></motion.span>
+          <motion.span
+            className="circle bottom-right"
+            initial={{ scale: 0, x: 0, y: 0 }}
+            animate={controls}
+            transition={{ delay: 0.2 }}
+          ></motion.span>
+        </span>
+      </div>
+    </div>
+  );
+};
 
 export default function Home() {
   const [loading, setLoading] = useState<"quick" | "login" | null>(null);
