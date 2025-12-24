@@ -9,102 +9,7 @@ import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
 import { HeartPulse, User } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, useAnimation } from "framer-motion";
-
-const BubbleButton = ({
-  onClick,
-  disabled,
-  children,
-}: {
-  onClick: () => void;
-  disabled: boolean;
-  children: React.ReactNode;
-}) => {
-  const controlsTopLeft = useAnimation();
-  const controlsBottomRight = useAnimation();
-
-  const handleMouseEnter = () => {
-    controlsTopLeft.start({
-      x: [-25, 0],
-      y: [-25, 0],
-      scale: [2, 1],
-      opacity: [0, 1],
-      transition: { duration: 0.4, ease: "easeOut" },
-    });
-    controlsBottomRight.start({
-      x: [25, 0],
-      y: [25, 0],
-      scale: [2, 1],
-      opacity: [0, 1],
-      transition: { duration: 0.4, ease: "easeOut" },
-    });
-  };
-  
-  const handleMouseLeave = () => {
-     controlsTopLeft.start({
-      x: 0,
-      y: 0,
-      scale: 1,
-      opacity: 1,
-      transition: { duration: 0.2 }
-    });
-    controlsBottomRight.start({
-      x: 0,
-      y: 0,
-      scale: 1,
-      opacity: 1,
-      transition: { duration: 0.2 }
-    });
-  }
-
-  return (
-    <div
-      className="button--bubble__container"
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-    >
-      <button
-        onClick={onClick}
-        disabled={disabled}
-        className="button button--bubble"
-      >
-        {children}
-      </button>
-      <span className="button--bubble__effect-container">
-        <motion.span
-          className="circle top-left"
-          animate={controlsTopLeft}
-        ></motion.span>
-        <motion.span
-          className="circle top-left"
-          animate={controlsTopLeft}
-          style={{ transitionDelay: '0.1s' }}
-        ></motion.span>
-        <motion.span
-          className="circle top-left"
-          animate={controlsTopLeft}
-           style={{ transitionDelay: '0.2s' }}
-        ></motion.span>
-
-        <span className="button effect-button"></span>
-
-        <motion.span
-          className="circle bottom-right"
-          animate={controlsBottomRight}
-        ></motion.span>
-        <motion.span
-          className="circle bottom-right"
-          animate={controlsBottomRight}
-          style={{ transitionDelay: '0.1s' }}
-        ></motion.span>
-        <motion.span
-          className="circle bottom-right"
-          animate={controlsBottomRight}
-          style={{ transitionDelay: '0.2s' }}
-        ></motion.span>
-      </span>
-    </div>
-  );
-};
+import { Button } from "@/components/ui/button";
 
 
 const FeatureCard = ({
@@ -126,9 +31,9 @@ const FeatureCard = ({
     <div className="mb-4">{icon}</div>
     <h2 className="mb-2 text-2xl font-bold text-primary">{title}</h2>
     <p className="mb-6 flex-grow text-muted-foreground">{description}</p>
-    <BubbleButton onClick={onClick} disabled={isLoading}>
+    <Button onClick={onClick} disabled={isLoading} className="rounded-full px-8 py-6 text-base">
        {isLoading ? "Please wait..." : buttonText}
-    </BubbleButton>
+    </Button>
   </div>
 );
 
