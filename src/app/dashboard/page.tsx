@@ -53,14 +53,14 @@ const ActionCard = ({
       !isOpening && isFading && 'opacity-0 scale-90'
     )}
   >
-    <button className="blob-btn w-full h-full" onClick={onClick}>
+    <button className="blob-btn group w-full h-full" onClick={onClick}>
       <div
         className={cn(
           'flex flex-col items-center gap-2 transition-opacity duration-200 p-4 z-10 relative',
           isOpening && 'opacity-0'
         )}
       >
-        <div className="rounded-full bg-primary/10 p-3 text-primary">{icon}</div>
+        <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors duration-500">{icon}</div>
         <div>
           <CardTitle className="text-base">{title}</CardTitle>
           <CardDescription className="text-xs">{description}</CardDescription>
