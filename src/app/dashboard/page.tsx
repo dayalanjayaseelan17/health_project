@@ -27,6 +27,7 @@ import {
   ClipboardList,
   CalendarDays,
   HeartPulse,
+  BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -208,7 +209,7 @@ export default function DashboardPage() {
             <div className="blob"></div>
             <div className="blob"></div>
             <div className="blob"></div>
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
                 <ActionCard
                 icon={<User className="h-8 w-8" />}
                 title="My Profile"
@@ -232,6 +233,14 @@ export default function DashboardPage() {
                 onClick={() => handleNavigation('#', 'daily')}
                 isOpening={opening === 'daily'}
                 isFading={!!opening && opening !== 'daily'}
+                />
+                <ActionCard
+                icon={<BarChart3 className="h-8 w-8" />}
+                title="Health Bar"
+                description="View your health summary"
+                onClick={() => handleNavigation('#', 'healthbar')}
+                isOpening={opening === 'healthbar'}
+                isFading={!!opening && opening !== 'healthbar'}
                 />
             </div>
           </div>
