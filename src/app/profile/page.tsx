@@ -1,9 +1,9 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDoc, useFirestore, useUser, useMemoFirebase } from '@/firebase';
+import { useDoc, useFirestore, useUser, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LoaderCircle,
   User,
@@ -21,7 +22,10 @@ import {
   Activity,
   ArrowLeft,
   Mail,
+  Edit,
+  Loader2,
 } from 'lucide-react';
+import { useToast } from "@/hooks/use-toast";
 
 const InfoCard = ({
   icon,
@@ -49,6 +53,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const { toast } = useToast();
+  
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -63,6 +71,40 @@ export default function ProfilePage() {
       router.replace('/login');
     }
   }, [user, isUserLoading, router]);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !userProfileRef) return;
+
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      updateDocumentNonBlocking(userProfileRef, { photoURL: dataUrl });
+      setIsUploading(false);
+      toast({
+        title: "Profile picture updated!",
+        description: "Your new picture has been saved.",
+      });
+    };
+    reader.onerror = (error) => {
+      setIsUploading(false);
+      toast({
+        variant: "destructive",
+        title: "Upload Failed",
+        description: "Could not read the selected file. Please try another image.",
+      });
+      console.error("File reading error:", error);
+    };
+  };
+  
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    const names = name.split(' ');
+    if (names.length === 1) return names[0][0].toUpperCase();
+    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  };
 
   if (isUserLoading || isProfileLoading || !userProfile) {
     return (
@@ -86,12 +128,33 @@ export default function ProfilePage() {
         </Button>
 
         <Card className="overflow-hidden shadow-lg">
-          <CardHeader className="bg-gradient-to-r from-primary to-green-400 p-8 text-white">
+          <CardHeader className="bg-gradient-to-r from-primary to-green-400 p-6 sm:p-8 text-white">
             <div className="flex items-center space-x-4">
-              <div className="rounded-full bg-white/20 p-4">
-                <User className="h-10 w-10" />
+              <div className="relative">
+                <Avatar className="h-24 w-24 border-4 border-white/80">
+                  <AvatarImage src={userProfile.photoURL} alt={userProfile.username}/>
+                  <AvatarFallback className="bg-white/30 text-white text-3xl">
+                    {getInitials(userProfile.username)}
+                  </AvatarFallback>
+                </Avatar>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-white text-primary hover:bg-gray-100"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploading}
+                >
+                  {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Edit className="h-4 w-4" />}
+                </Button>
               </div>
-              <div>
+              <div className="flex-1">
                 <CardTitle className="text-3xl font-bold">
                   {userProfile.username}
                 </CardTitle>

@@ -30,6 +30,11 @@
         "weight": {
           "type": "number",
           "description": "The user's weight in kilograms."
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "URL of the user's profile picture, stored as a data URI.",
+          "format": "uri"
         }
       },
       "required": [

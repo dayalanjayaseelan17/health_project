@@ -20,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LoaderCircle,
   User,
@@ -102,6 +103,13 @@ export default function DashboardPage() {
       </div>
     );
   }
+  
+  const getInitials = (name: string) => {
+    if (!name) return '';
+    const names = name.split(' ');
+    if (names.length === 1) return names[0][0].toUpperCase();
+    return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
@@ -113,14 +121,18 @@ export default function DashboardPage() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                variant="outline"
-                size="icon"
-                className="overflow-hidden rounded-full bg-white/20 text-white hover:bg-white/30 border-white/50"
+                variant="ghost"
+                className="relative h-10 w-10 rounded-full"
               >
-                <User className="h-5 w-5" />
+                <Avatar className="h-10 w-10 border-2 border-white/50">
+                  <AvatarImage src={userProfile?.photoURL} alt={userProfile?.username} />
+                  <AvatarFallback className="bg-white/30 text-white">
+                    {getInitials(userProfile?.username)}
+                  </AvatarFallback>
+                </Avatar>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
+            <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => router.push('/profile')}>
