@@ -191,114 +191,97 @@
     transform: translateX(0);
   }
 
-.blob-btn {
-  z-index: 1;
+.button--bubble__container {
   position: relative;
-  padding: 20px 46px;
-  text-align: center;
-  text-transform: uppercase;
-  color: hsl(var(--primary));
-  font-size: 16px;
-  font-weight: bold;
+  display: inline-block;
+}
+
+.button--bubble {
+  -webkit-font-smoothing: antialiased;
   background-color: transparent;
-  outline: none;
   border: none;
-  transition: color 0.5s;
-  cursor: pointer;
-  border-radius: 30px;
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.blob-btn:before {
-  content: "";
-  z-index: 1;
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  border: 2px solid hsl(var(--primary));
-  border-radius: 30px;
-}
-.blob-btn:after {
-  content: "";
-  z-index: -2;
-  position: absolute;
-  left: 3px;
-  top: 3px;
-  width: 100%;
-  height: 100%;
-  transition: all 0.3s 0.2s;
-  border-radius: 30px;
-}
-.blob-btn:hover {
-  color: hsl(var(--primary-foreground));
-  border-radius: 30px;
-}
-.blob-btn:hover:after {
-  transition: all 0.3s;
-  left: 0;
-  top: 0;
-  border-radius: 30px;
-}
-.blob-btn__inner {
-  z-index: -1;
-  overflow: hidden;
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 30px;
-  background: #ffffff;
-}
-.blob-btn__blobs {
+  color: #fff;
+  display: inline-block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 14px;
+  font-weight: 100;
+  text-decoration: none;
+  user-select: none;
+  letter-spacing: 1px;
+  padding: 20px 40px;
+  text-transform: uppercase;
+  transition: all 0.1s ease-out;
   position: relative;
-  display: block;
-  height: 100%;
-  filter: url("#goo");
+  z-index: 2;
 }
-.blob-btn__blob {
-  position: absolute;
-  top: 2px;
-  width: 25%;
-  height: 100%;
+
+.button--bubble:hover {
+  background: none;
+}
+
+.button--bubble:hover + .button--bubble__effect-container .circle {
   background: hsl(var(--primary));
-  border-radius: 100%;
-  transform: translate3d(0, 150%, 0) scale(1.7);
-  transition: transform 0.45s;
 }
-@supports (filter: url("#goo")) {
-  .blob-btn__blob {
-    transform: translate3d(0, 150%, 0) scale(1.4);
+.button--bubble:hover + .button--bubble__effect-container .button {
+  background: hsl(var(--primary));
+}
+.button--bubble:active + .button--bubble__effect-container {
+  transform: scale(0.95);
+}
+
+.effect-button {
+  position: absolute;
+  width: 50%;
+  height: 25%;
+  top: 50%;
+  left: 25%;
+  z-index: 1;
+  transform: translateY(-50%);
+  background: #222;
+  transition: background 0.1s ease-out;
+}
+
+.button--bubble__effect-container {
+  position: absolute;
+  display: block;
+  width: 200%;
+  height: 400%;
+  top: -150%;
+  left: -50%;
+  -webkit-filter: url("#goo");
+  filter: url("#goo");
+  transition: all 0.1s ease-out;
+  pointer-events: none;
+}
+.button--bubble__effect-container .circle {
+  position: absolute;
+  width: 25px;
+  height: 25px;
+  border-radius: 15px;
+  background: #222;
+  transition: background 0.1s ease-out;
+}
+.button--bubble__effect-container .circle.top-left {
+  top: 40%;
+  left: 27%;
+}
+.button--bubble__effect-container .circle.bottom-right {
+  bottom: 40%;
+  right: 27%;
+}
+
+@keyframes hue-rotate {
+  from {
+    -webkit-filter: hue-rotate(0);
+    -moz-filter: hue-rotate(0);
+    -ms-filter: hue-rotate(0);
+    filter: hue-rotate(0);
   }
-}
-.blob-btn__blob:nth-child(1) {
-  left: 0%;
-  transition-delay: 0s;
-}
-.blob-btn__blob:nth-child(2) {
-  left: 30%;
-  transition-delay: 0.08s;
-}
-.blob-btn__blob:nth-child(3) {
-  left: 60%;
-  transition-delay: 0.16s;
-}
-.blob-btn__blob:nth-child(4) {
-  left: 90%;
-  transition-delay: 0.24s;
-}
-.blob-btn:hover .blob-btn__blob {
-  transform: translateZ(0) scale(1.7);
-}
-@supports (filter: url("#goo")) {
-  .blob-btn:hover .blob-btn__blob {
-    transform: translateZ(0) scale(1.4);
+  to {
+    -webkit-filter: hue-rotate(360deg);
+    -moz-filter: hue-rotate(360deg);
+    -ms-filter: hue-rotate(360deg);
+    filter: hue-rotate(360deg);
   }
 }
 }

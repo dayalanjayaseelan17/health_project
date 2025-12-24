@@ -36,23 +36,17 @@ const ActionCard = ({
   onClick: () => void;
 }) => {
   return (
-    <button onClick={onClick} className="blob-btn group">
-      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center">
-        <div className="text-primary transition-colors duration-500 group-hover:text-white">{icon}</div>
-        <div>
-          <h2 className="text-base font-bold text-card-foreground transition-colors duration-500 group-hover:text-white">{title}</h2>
-          <p className="text-xs text-muted-foreground transition-colors duration-500 group-hover:text-white/80">{description}</p>
-        </div>
-      </div>
-      <span className="blob-btn__inner">
-        <span className="blob-btn__blobs">
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-        </span>
-      </span>
-    </button>
+    <Card className="cursor-pointer transition-all duration-300 hover:shadow-lg hover:scale-105" onClick={onClick}>
+        <CardContent className="flex flex-col items-center justify-center gap-4 p-6 text-center">
+            <div className="rounded-full bg-primary/10 p-4 text-primary">
+                {icon}
+            </div>
+            <div>
+                <h2 className="text-lg font-bold text-card-foreground">{title}</h2>
+                <p className="text-sm text-muted-foreground">{description}</p>
+            </div>
+        </CardContent>
+    </Card>
   );
 };
 
