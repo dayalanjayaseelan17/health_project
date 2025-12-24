@@ -414,26 +414,24 @@ const LoginPageContent = () => {
 
   useEffect(() => {
     setIsClient(true);
-    // This logic to switch panels is now back
     const action = searchParams.get('action');
     if (action === 'signup') {
       setRightPanel(true);
     }
   }, [searchParams]);
 
-  // If user is already logged in, redirect them away from the login page
+  // If user is logged in (and not anonymous), redirect to dashboard
   useEffect(() => {
-    if (isClient && !isUserLoading && user) {
+    if (!isUserLoading && user && !user.isAnonymous) {
       router.replace("/dashboard");
     }
-  }, [user, isUserLoading, router, isClient]);
+  }, [user, isUserLoading, router]);
 
   const handleAuthSuccess = () => {
     router.replace("/dashboard");
   };
 
-  // While checking user auth state, show a loader to prevent hydration mismatch
-  if (!isClient || isUserLoading || (isClient && user)) {
+  if (isUserLoading || (user && !user.isAnonymous)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-green-50">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -497,5 +495,3 @@ export default function LoginPage() {
     </Suspense>
   )
 }
-
-    
