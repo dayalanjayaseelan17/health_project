@@ -105,9 +105,9 @@ export default function DashboardPage() {
 
   return (
     <div className="flex min-h-screen flex-col bg-gray-50">
-      <header className="bg-white shadow-sm">
+      <header className="bg-gradient-to-r from-primary to-green-400 text-white shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-          <h1 className="text-2xl font-bold leading-tight tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold leading-tight tracking-tight">
             Welcome, {userProfile?.username || 'User'}!
           </h1>
           <DropdownMenu>
@@ -115,7 +115,7 @@ export default function DashboardPage() {
               <Button
                 variant="outline"
                 size="icon"
-                className="overflow-hidden rounded-full"
+                className="overflow-hidden rounded-full bg-white/20 text-white hover:bg-white/30 border-white/50"
               >
                 <User className="h-5 w-5" />
               </Button>
