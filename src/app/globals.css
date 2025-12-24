@@ -58,7 +58,6 @@
     @apply bg-background text-foreground;
   }
 
-  /* SVG filter for the gooey effect */
   .gooey-filter {
     width: 0;
     height: 0;
@@ -199,118 +198,33 @@
     transform: translateX(0);
   }
 
-.blob-btn {
-  z-index: 1;
-  position: relative;
-  text-align: center;
-  color: hsl(var(--primary));
-  font-size: 1rem;
-  font-weight: bold;
-  background-color: transparent;
-  outline: none;
-  border: none;
-  transition: color 0.5s;
-  cursor: pointer;
-}
-
-.blob-btn:before {
-  content: "";
-  z-index: 1;
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  border: 2px solid hsl(var(--primary));
-  border-radius: 9999px;
-}
-
-.blob-btn:after {
-  content: "";
-  z-index: -2;
-  position: absolute;
-  left: 3px;
-  top: 3px;
-  width: 100%;
-  height: 100%;
-  transition: all 0.3s 0.2s;
-  border-radius: 9999px;
-}
-
-.blob-btn:hover {
-  color: #FFFFFF;
-}
-
-.blob-btn:hover:after {
-  transition: all 0.3s;
-  left: 0;
-  top: 0;
-}
-
-.blob-btn__inner {
-  z-index: -1;
-  overflow: hidden;
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  border-radius: 9999px;
-  background: #ffffff;
-}
-
-.blob-btn__blobs {
-  position: relative;
-  display: block;
-  height: 100%;
-  filter: url('#goo');
-}
-
-.blob-btn__blob {
-  position: absolute;
-  top: 2px;
-  width: 25%;
-  height: 100%;
-  background: hsl(var(--primary));
-  border-radius: 100%;
-  transform: translate3d(0, 150%, 0) scale(1.7);
-  transition: transform 0.45s;
-}
-
-@supports (filter: url('#goo')) {
-  .blob-btn__blob {
-    transform: translate3d(0, 150%, 0) scale(1.4);
+  .bubble-btn {
+    @apply relative w-full h-full flex items-center justify-center rounded-2xl cursor-pointer;
+    @apply text-primary font-bold text-center;
+    @apply bg-white border-2 border-primary;
+    -webkit-font-smoothing: antialiased;
+    transition: all 0.2s ease-out;
   }
-}
 
-.blob-btn__blob:nth-child(1) {
-  left: 0%;
-  transition-delay: 0s;
-}
-
-.blob-btn__blob:nth-child(2) {
-  left: 30%;
-  transition-delay: 0.08s;
-}
-
-.blob-btn__blob:nth-child(3) {
-  left: 60%;
-  transition-delay: 0.16s;
-}
-
-.blob-btn__blob:nth-child(4) {
-  left: 90%;
-  transition-delay: 0.24s;
-}
-
-.blob-btn:hover .blob-btn__blob {
-  transform: translateZ(0) scale(1.7);
-}
-
-@supports (filter: url('#goo')) {
-  .blob-btn:hover .blob-btn__blob {
-    transform: translateZ(0) scale(1.4);
+  .bubble-btn:hover {
+    @apply text-white;
   }
-}
+  
+  .bubble-btn__effect-container {
+    @apply absolute inset-0 w-full h-full overflow-hidden rounded-2xl;
+    pointer-events: none;
+  }
+  
+  .bubble-btn__bubble {
+    @apply absolute block rounded-full;
+    width: 40px;
+    height: 40px;
+    background-color: hsl(var(--primary));
+    transform-origin: center;
+  }
+
+  .bubble-btn:hover .bubble-btn__bubble {
+     background-color: hsl(var(--primary));
+  }
 
 }

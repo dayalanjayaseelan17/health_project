@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useDoc,
@@ -26,7 +26,7 @@ import {
   HeartPulse,
   BarChart3,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 const ActionCard = ({
   icon,
@@ -38,31 +38,52 @@ const ActionCard = ({
   title: string;
   description: string;
   onClick: () => void;
-}) => (
-  <div
-    className='relative aspect-square flex items-center justify-center text-center transition-all duration-300'
-  >
-    <button className="blob-btn group w-full h-full" onClick={onClick}>
-      <div
-        className='flex flex-col items-center gap-2 transition-opacity duration-200 p-4 z-10 relative'
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  const bubbles = Array.from({ length: 6 });
+
+  return (
+    <div className="relative aspect-square flex items-center justify-center text-center transition-all duration-300">
+      <button
+        className="bubble-btn group w-full h-full"
+        onClick={onClick}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors duration-500">{icon}</div>
-        <div>
-          <h2 className="text-base font-bold">{title}</h2>
-          <p className="text-xs text-muted-foreground">{description}</p>
+        <div className='flex flex-col items-center gap-2 p-4 z-10 relative'>
+          <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors duration-500">{icon}</div>
+          <div>
+            <h2 className="text-base font-bold">{title}</h2>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
         </div>
-      </div>
-      <span className="blob-btn__inner">
-        <span className="blob-btn__blobs">
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-          <span className="blob-btn__blob"></span>
-        </span>
-      </span>
-    </button>
-  </div>
-);
+        
+        <div className="bubble-btn__effect-container">
+          {bubbles.map((_, i) => (
+            <motion.span
+              key={i}
+              className="bubble-btn__bubble"
+              initial={{ x: '50%', y: '50%', scale: 0 }}
+              animate={{
+                x: isHovered ? (Math.random() - 0.5) * 200 : '50%',
+                y: isHovered ? (Math.random() - 0.5) * 200 : '50%',
+                scale: isHovered ? 1 + Math.random() * 0.5 : 0,
+                opacity: isHovered ? 1 : 0,
+              }}
+              transition={{
+                type: 'spring',
+                stiffness: 100,
+                damping: 10,
+                delay: isHovered ? Math.random() * 0.2 : 0,
+              }}
+            />
+          ))}
+        </div>
+      </button>
+    </div>
+  );
+};
 
 
 export default function DashboardPage() {
@@ -179,7 +200,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4" style={{ filter: "url('#goo')"}}>
               <ActionCard
               icon={<User className="h-8 w-8" />}
               title="My Profile"
