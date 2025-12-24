@@ -4,6 +4,7 @@ import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
 import Script from 'next/script';
+import Template from './template';
 
 export const metadata: Metadata = {
   title: 'Swasthya Margdarshan',
@@ -31,7 +32,7 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased h-full">
         <FirebaseClientProvider>
-          {children}
+          <Template>{children}</Template>
           <Toaster />
         </FirebaseClientProvider>
         <svg
