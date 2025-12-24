@@ -65,11 +65,6 @@ const ActionCard = ({
         <CardDescription>{description}</CardDescription>
       </div>
     </CardHeader>
-    {isOpening && (
-      <div className="absolute inset-0 flex items-center justify-center">
-        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    )}
   </Card>
 );
 
@@ -206,11 +201,6 @@ export default function DashboardPage() {
                 Check New Symptom
               </Button>
             </CardContent>
-            {opening === 'symptoms' && (
-               <div className="absolute inset-0 flex items-center justify-center">
-                 <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
-               </div>
-            )}
           </Card>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
