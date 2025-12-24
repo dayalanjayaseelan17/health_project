@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "UserProfile": {
@@ -45,6 +46,83 @@
         "height",
         "weight"
       ]
+    },
+    "Medicine": {
+      "title": "Medicine",
+      "type": "object",
+      "description": "Represents a single medicine in the user's tracking list.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user this medicine belongs to."
+        },
+        "name": {
+          "type": "string",
+          "description": "The name of the medicine."
+        },
+        "dosage": {
+          "type": "string",
+          "description": "Dosage information (e.g., '500 mg', '1 tablet')."
+        },
+        "frequency": {
+          "type": "string",
+          "enum": ["Once", "Twice", "Thrice", "Custom"],
+          "description": "How often the medicine is taken daily."
+        },
+        "times": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["Morning", "Afternoon", "Night"]
+          },
+          "description": "Specific times of day to take the medicine."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The start date for taking the medicine."
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The end date for taking the medicine."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the medicine was added."
+        }
+      },
+      "required": ["userId", "name", "dosage", "frequency", "times", "startDate", "endDate", "createdAt"]
+    },
+    "MedicineStatus": {
+      "title": "Medicine Status",
+      "type": "object",
+      "description": "Tracks the status of a specific medicine dose on a given day.",
+      "properties": {
+        "medicineId": {
+          "type": "string",
+          "description": "The ID of the medicine this status refers to."
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "description": "The specific date this status applies to (YYYY-MM-DD)."
+        },
+        "status": {
+           "type": "object",
+           "propertyNames": {
+             "pattern": "^(Morning|Afternoon|Night)$"
+           },
+           "patternProperties": {
+             ".*": {
+                "type": "string",
+                "enum": ["Pending", "Taken", "Missed"]
+             }
+           }
+        }
+      },
+      "required": ["medicineId", "date", "status"]
     }
   },
   "auth": {
@@ -63,15 +141,31 @@
             "$ref": "#/backend/entities/UserProfile"
           },
           "description": "Stores user profile information in a top-level 'users' collection. The document ID matches the Firebase Auth UID.",
-          "params": [
+          "subcollections": [
             {
-              "name": "userId",
-              "description": "The Firebase Authentication UID of the user."
+              "path": "medicines/{medicineId}",
+              "definition": {
+                "entityName": "Medicine",
+                "schema": {
+                  "$ref": "#/backend/entities/Medicine"
+                },
+                "description": "A sub-collection to store all medicines for a specific user."
+              }
+            },
+            {
+               "path": "medicineStatuses/{statusId}",
+               "definition": {
+                 "entityName": "MedicineStatus",
+                 "schema": {
+                    "$ref": "#/backend/entities/MedicineStatus"
+                 },
+                 "description": "Stores the daily status of each medicine dose for a user. Document ID can be medicineId_YYYY-MM-DD."
+               }
             }
           ]
         }
       }
     ],
-    "reasoning": "The Firestore structure uses a top-level 'users' collection where each document ID is the user's Firebase Auth UID. This simplifies queries for username lookup during sign-in, as it avoids collection group queries and the need for manual composite indexes. This structure is more efficient and scalable for direct user lookups."
+    "reasoning": "A `medicines` sub-collection under each user document is scalable and ensures data is user-specific. A separate `medicineStatuses` sub-collection is used to track the daily taken/missed status, which avoids bloating the main medicine documents with frequently changing data and simplifies queries for 'today's' medicine statuses."
   }
 }

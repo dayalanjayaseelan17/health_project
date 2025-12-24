@@ -185,7 +185,7 @@ export default function DashboardPage() {
               icon={<ClipboardList className="h-8 w-8" />}
               title="Medicine Tracker"
               description="Manage your prescriptions"
-              onClick={() => handleNavigation('#')}
+              onClick={() => handleNavigation('/medicine-tracker')}
             />
             <ActionCard
               icon={<CalendarDays className="h-8 w-8" />}

@@ -1,19 +1,40 @@
-/**
- * @name Hackathon Development Rules
- * @description These rules are intentionally open for a hackathon environment.
- * They allow all read and write operations to facilitate rapid development and
- * prevent permission-related blockers.
- *
- * WARNING: These rules are NOT secure for a production application.
- * Before deploying to a live environment, you should implement strict,
- * user-based security rules to protect user data.
- */
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow all reads and writes to any document in the database.
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    // USERS
+    match /users/{userId} {
+      // Users can only read and write their own profile
+      allow read, write: if isSignedIn() && isOwner(userId);
+
+      // MEDICINES SUB-COLLECTION
+      match /medicines/{medicineId} {
+        // Users can create, read, update, and delete their own medicines.
+        allow read, write: if isSignedIn() && isOwner(userId);
+      }
+
+      // MEDICINE STATUSES SUB-COLLECTION
+      match /medicineStatuses/{statusId} {
+         // Users can create, read, and update their own medicine statuses.
+         // Deletion is disallowed to maintain history, but could be enabled if needed.
+         allow read, create, update: if isSignedIn() && isOwner(userId);
+         allow delete: if false; 
+      }
+    }
+
+    // Default deny all other access
     match /{document=**} {
-      allow read, write: if true;
+      allow read, write: if false;
     }
   }
 }
