@@ -47,7 +47,8 @@ const ActionCard = ({
 }) => (
   <Card
     className={cn(
-      'cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg relative',
+      'cursor-pointer transition-all duration-300 hover:scale-105 rounded-full aspect-square flex items-center justify-center text-center',
+      'bg-white/80 backdrop-blur-sm z-10',
       isOpening && 'scale-110 z-20',
       !isOpening && isFading && 'opacity-0 scale-90'
     )}
@@ -55,14 +56,14 @@ const ActionCard = ({
   >
     <CardHeader
       className={cn(
-        'flex flex-row items-center gap-4 transition-opacity duration-200',
+        'flex flex-col items-center gap-2 transition-opacity duration-200 p-4',
         isOpening && 'opacity-0'
       )}
     >
-      <div className="rounded-lg bg-primary/10 p-3 text-primary">{icon}</div>
+      <div className="rounded-full bg-primary/10 p-3 text-primary">{icon}</div>
       <div>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardTitle className="text-base">{title}</CardTitle>
+        <CardDescription className="text-xs">{description}</CardDescription>
       </div>
     </CardHeader>
   </Card>
@@ -174,7 +175,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-4xl">
           <Card
             className={cn(
-              'mb-8 cursor-pointer border-green-200 bg-green-100 transition-all duration-300 hover:shadow-lg',
+              'mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl',
               opening && opening !== 'symptoms' && 'opacity-0 scale-90',
               opening === 'symptoms' && 'scale-110 z-10'
             )}
@@ -203,31 +204,36 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <ActionCard
-              icon={<User className="h-8 w-8" />}
-              title="My Profile"
-              description="View and update your details"
-              onClick={() => handleNavigation('/profile', 'profile')}
-              isOpening={opening === 'profile'}
-              isFading={!!opening && opening !== 'profile'}
-            />
-            <ActionCard
-              icon={<ClipboardList className="h-8 w-8" />}
-              title="Medicine Tracker"
-              description="Manage your prescriptions"
-              onClick={() => handleNavigation('#', 'medicine')}
-              isOpening={opening === 'medicine'}
-              isFading={!!opening && opening !== 'medicine'}
-            />
-            <ActionCard
-              icon={<CalendarDays className="h-8 w-8" />}
-              title="Daily Tracker"
-              description="Log your daily health metrics"
-              onClick={() => handleNavigation('#', 'daily')}
-              isOpening={opening === 'daily'}
-              isFading={!!opening && opening !== 'daily'}
-            />
+          <div className="blobs-container">
+            <div className="blob"></div>
+            <div className="blob"></div>
+            <div className="blob"></div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                <ActionCard
+                icon={<User className="h-8 w-8" />}
+                title="My Profile"
+                description="View and update your details"
+                onClick={() => handleNavigation('/profile', 'profile')}
+                isOpening={opening === 'profile'}
+                isFading={!!opening && opening !== 'profile'}
+                />
+                <ActionCard
+                icon={<ClipboardList className="h-8 w-8" />}
+                title="Medicine Tracker"
+                description="Manage your prescriptions"
+                onClick={() => handleNavigation('#', 'medicine')}
+                isOpening={opening === 'medicine'}
+                isFading={!!opening && opening !== 'medicine'}
+                />
+                <ActionCard
+                icon={<CalendarDays className="h-8 w-8" />}
+                title="Daily Tracker"
+                description="Log your daily health metrics"
+                onClick={() => handleNavigation('#', 'daily')}
+                isOpening={opening === 'daily'}
+                isFading={!!opening && opening !== 'daily'}
+                />
+            </div>
           </div>
         </div>
       </main>

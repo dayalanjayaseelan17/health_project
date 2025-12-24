@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -55,6 +56,14 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* SVG filter for the gooey effect */
+  .gooey-filter {
+    width: 0;
+    height: 0;
+    position: absolute;
+    visibility: hidden;
   }
 }
 
@@ -188,5 +197,55 @@
   .overlay-right {
     right: 0;
     transform: translateX(0);
+  }
+
+  /* Blobs animation styles */
+  .blobs-container {
+    position: relative;
+    filter: url(#goo);
+  }
+
+  .blob {
+    position: absolute;
+    border-radius: 100%;
+    background: linear-gradient(to right, hsl(var(--primary)/0.6), hsl(var(--accent)/0.6));
+    animation: move 10s ease-in-out infinite;
+    transform-origin: 50% 50%;
+    opacity: 0.7;
+    z-index: 5;
+  }
+  
+  .blob:nth-child(1) {
+    width: 150px;
+    height: 150px;
+    left: 10%;
+    top: 10%;
+    animation-duration: 8s;
+    animation-delay: 0s;
+  }
+
+  .blob:nth-child(2) {
+    width: 120px;
+    height: 120px;
+    left: 70%;
+    top: 60%;
+    animation-duration: 12s;
+    animation-delay: -3s;
+  }
+
+  .blob:nth-child(3) {
+    width: 100px;
+    height: 100px;
+    left: 40%;
+    top: 30%;
+    animation-duration: 10s;
+    animation-delay: -7s;
+  }
+  
+  @keyframes move {
+    0%, 100% { transform: scale(1) translate(0, 0); }
+    25% { transform: scale(0.9) translate(20px, 40px); }
+    50% { transform: scale(1.1) translate(-30px, -10px); }
+    75% { transform: scale(0.95) translate(40px, -30px); }
   }
 }
