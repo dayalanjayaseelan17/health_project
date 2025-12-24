@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useDoc,
@@ -14,9 +14,6 @@ import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
 import {
   Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
   CardContent,
 } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -36,34 +33,23 @@ const ActionCard = ({
   title,
   description,
   onClick,
-  isOpening,
-  isFading,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
-  isOpening: boolean;
-  isFading: boolean;
 }) => (
   <div
-    className={cn(
-      'relative aspect-square flex items-center justify-center text-center transition-all duration-300',
-      isOpening && 'scale-110 z-20',
-      !isOpening && isFading && 'opacity-0 scale-90'
-    )}
+    className='relative aspect-square flex items-center justify-center text-center transition-all duration-300'
   >
     <button className="blob-btn group w-full h-full" onClick={onClick}>
       <div
-        className={cn(
-          'flex flex-col items-center gap-2 transition-opacity duration-200 p-4 z-10 relative',
-          isOpening && 'opacity-0'
-        )}
+        className='flex flex-col items-center gap-2 transition-opacity duration-200 p-4 z-10 relative'
       >
         <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors duration-500">{icon}</div>
         <div>
-          <CardTitle className="text-base">{title}</CardTitle>
-          <CardDescription className="text-xs">{description}</CardDescription>
+          <h2 className="text-base font-bold">{title}</h2>
+          <p className="text-xs text-muted-foreground">{description}</p>
         </div>
       </div>
       <span className="blob-btn__inner">
@@ -84,8 +70,6 @@ export default function DashboardPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const [opening, setOpening] = useState<string | null>(null);
-  const [isFading, setIsFading] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
@@ -106,18 +90,8 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
-  const handleNavigation = (path: string, cardId: string) => {
-    if (opening) return;
-  
-    setOpening(cardId);
-  
-    setTimeout(() => {
-      setIsFading(true);
-    }, 50);
-  
-    setTimeout(() => {
+  const handleNavigation = (path: string) => {
       router.push(path);
-    }, 500); 
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
@@ -182,17 +156,10 @@ export default function DashboardPage() {
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
           <Card
-            className={cn(
-              'mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl',
-              opening && opening !== 'symptoms' && 'opacity-0 scale-90',
-              opening === 'symptoms' && 'scale-110 z-10'
-            )}
-            onClick={() => handleNavigation('/symptoms', 'symptoms')}
+            className='mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl'
+            onClick={() => handleNavigation('/symptoms')}
           >
-            <CardContent className={cn(
-              "flex items-center justify-between p-6 transition-opacity duration-200",
-              opening === 'symptoms' && 'opacity-0'
-            )}>
+            <CardContent className="flex items-center justify-between p-6">
               <div>
                 <h2 className="text-xl font-bold text-green-800">
                   Have a new health concern?
@@ -217,33 +184,25 @@ export default function DashboardPage() {
               icon={<User className="h-8 w-8" />}
               title="My Profile"
               description="View and update your details"
-              onClick={() => handleNavigation('/profile', 'profile')}
-              isOpening={opening === 'profile'}
-              isFading={!!opening && opening !== 'profile'}
+              onClick={() => handleNavigation('/profile')}
               />
               <ActionCard
               icon={<ClipboardList className="h-8 w-8" />}
               title="Medicine Tracker"
               description="Manage your prescriptions"
-              onClick={() => handleNavigation('#', 'medicine')}
-              isOpening={opening === 'medicine'}
-              isFading={!!opening && opening !== 'medicine'}
+              onClick={() => handleNavigation('#')}
               />
               <ActionCard
               icon={<CalendarDays className="h-8 w-8" />}
               title="Daily Tracker"
               description="Log your daily health metrics"
-              onClick={() => handleNavigation('#', 'daily')}
-              isOpening={opening === 'daily'}
-              isFading={!!opening && opening !== 'daily'}
+              onClick={() => handleNavigation('#')}
               />
               <ActionCard
               icon={<BarChart3 className="h-8 w-8" />}
               title="Health Bar"
               description="View your health summary"
-              onClick={() => handleNavigation('#', 'healthbar')}
-              isOpening={opening === 'healthbar'}
-              isFading={!!opening && opening !== 'healthbar'}
+              onClick={() => handleNavigation('#')}
               />
           </div>
         </div>
