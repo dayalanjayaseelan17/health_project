@@ -35,28 +35,41 @@ const ActionCard = ({
   title,
   description,
   onClick,
-  className,
+  isOpening,
+  isFading,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
-  className?: string;
+  isOpening: boolean;
+  isFading: boolean;
 }) => (
   <Card
     className={cn(
-      'cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg',
-      className
+      'cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg relative',
+      isOpening && 'scale-110 z-20',
+      !isOpening && isFading && 'opacity-0 scale-90'
     )}
     onClick={onClick}
   >
-    <CardHeader className="flex flex-row items-center gap-4">
+    <CardHeader
+      className={cn(
+        'flex flex-row items-center gap-4 transition-opacity duration-200',
+        isOpening && 'opacity-0'
+      )}
+    >
       <div className="rounded-lg bg-primary/10 p-3 text-primary">{icon}</div>
       <div>
         <CardTitle>{title}</CardTitle>
         <CardDescription>{description}</CardDescription>
       </div>
     </CardHeader>
+    {isOpening && (
+      <div className="absolute inset-0 flex items-center justify-center">
+        <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )}
   </Card>
 );
 
@@ -66,6 +79,7 @@ export default function DashboardPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
   const [opening, setOpening] = useState<string | null>(null);
+  const [isFading, setIsFading] = useState(false);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
@@ -87,10 +101,19 @@ export default function DashboardPage() {
   };
 
   const handleNavigation = (path: string, cardId: string) => {
+    if (opening) return;
+  
     setOpening(cardId);
+  
+    // Start fading other cards
+    setTimeout(() => {
+      setIsFading(true);
+    }, 50);
+  
+    // Wait for animation, then navigate
     setTimeout(() => {
       router.push(path);
-    }, 300); // Wait for animation
+    }, 500); 
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
@@ -121,12 +144,6 @@ export default function DashboardPage() {
     const names = name.split(' ');
     if (names.length === 1) return names[0][0].toUpperCase();
     return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
-  };
-
-  const getCardClass = (cardId: string) => {
-    if (!opening) return 'opacity-100 scale-100';
-    if (opening === cardId) return 'opacity-100 scale-110 z-10';
-    return 'opacity-0 scale-90';
   };
 
   return (
@@ -163,11 +180,15 @@ export default function DashboardPage() {
           <Card
             className={cn(
               'mb-8 cursor-pointer border-green-200 bg-green-100 transition-all duration-300 hover:shadow-lg',
-              getCardClass('symptoms')
+              opening && opening !== 'symptoms' && 'opacity-0 scale-90',
+              opening === 'symptoms' && 'scale-110 z-10'
             )}
             onClick={() => handleNavigation('/symptoms', 'symptoms')}
           >
-            <CardContent className="flex items-center justify-between p-6">
+            <CardContent className={cn(
+              "flex items-center justify-between p-6 transition-opacity duration-200",
+              opening === 'symptoms' && 'opacity-0'
+            )}>
               <div>
                 <h2 className="text-xl font-bold text-green-800">
                   Have a new health concern?
@@ -185,6 +206,11 @@ export default function DashboardPage() {
                 Check New Symptom
               </Button>
             </CardContent>
+            {opening === 'symptoms' && (
+               <div className="absolute inset-0 flex items-center justify-center">
+                 <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
+               </div>
+            )}
           </Card>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -193,21 +219,24 @@ export default function DashboardPage() {
               title="My Profile"
               description="View and update your details"
               onClick={() => handleNavigation('/profile', 'profile')}
-              className={getCardClass('profile')}
+              isOpening={opening === 'profile'}
+              isFading={!!opening && opening !== 'profile'}
             />
             <ActionCard
               icon={<ClipboardList className="h-8 w-8" />}
               title="Medicine Tracker"
               description="Manage your prescriptions"
               onClick={() => handleNavigation('#', 'medicine')}
-              className={getCardClass('medicine')}
+              isOpening={opening === 'medicine'}
+              isFading={!!opening && opening !== 'medicine'}
             />
             <ActionCard
               icon={<CalendarDays className="h-8 w-8" />}
               title="Daily Tracker"
               description="Log your daily health metrics"
               onClick={() => handleNavigation('#', 'daily')}
-              className={getCardClass('daily')}
+              isOpening={opening === 'daily'}
+              isFading={!!opening && opening !== 'daily'}
             />
           </div>
         </div>
