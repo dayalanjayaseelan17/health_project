@@ -23,7 +23,7 @@ import {
   HeartPulse,
   BarChart3,
 } from 'lucide-react';
-import { motion, useAnimation } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 const ActionCard = ({
   icon,
@@ -36,65 +36,33 @@ const ActionCard = ({
   description: string;
   onClick: () => void;
 }) => {
-  const ref = useRef<HTMLButtonElement>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [mousePosition, setMousePosition] = useState({ x: -1, y: -1 });
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-    if (ref.current) {
-      const rect = ref.current.getBoundingClientRect();
-      setMousePosition({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-    }
-  };
 
   return (
-    <div
-      className="relative aspect-square overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-lg"
+    <button
+      onClick={onClick}
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => {
-        setIsHovered(false);
-        setMousePosition({ x: -1, y: -1 });
-      }}
+      onMouseLeave={() => setIsHovered(false)}
+      className="blob-btn group"
     >
-      <button
-        ref={ref}
-        onClick={onClick}
-        onMouseMove={handleMouseMove}
-        className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center"
-      >
-        <div className={`transition-colors ${isHovered ? 'text-white' : 'text-primary'}`}>{icon}</div>
+      <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center">
+        <div className="text-primary transition-colors duration-500 group-hover:text-white">{icon}</div>
         <div>
-          <h2 className={`text-base font-bold transition-colors ${isHovered ? 'text-white' : ''}`}>{title}</h2>
-          <p className={`text-xs transition-colors ${isHovered ? 'text-white/80' : 'text-muted-foreground'}`}>{description}</p>
+          <h2 className="text-base font-bold text-card-foreground transition-colors duration-500 group-hover:text-white">{title}</h2>
+          <p className="text-xs text-muted-foreground transition-colors duration-500 group-hover:text-white/80">{description}</p>
         </div>
-      </button>
-
-      {isHovered && (
-        <motion.span
-          className="pointer-events-none absolute -z-10 block h-32 w-32 rounded-full bg-primary"
-          style={{
-            top: mousePosition.y,
-            left: mousePosition.x,
-            x: '-50%',
-            y: '-50%',
-          }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 3 }}
-          exit={{ scale: 0 }}
-          transition={{
-            type: 'spring',
-            stiffness: 260,
-            damping: 20,
-          }}
-        />
-      )}
-    </div>
+      </div>
+      <span className="blob-btn__inner">
+        <span className="blob-btn__blobs">
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+        </span>
+      </span>
+    </button>
   );
 };
-
 
 export default function DashboardPage() {
   const router = useRouter();
