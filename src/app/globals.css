@@ -58,11 +58,11 @@
     @apply bg-background text-foreground;
   }
 
-  .gooey-filter {
-    width: 0;
-    height: 0;
+  .goo {
     position: absolute;
     visibility: hidden;
+    width: 1px;
+    height: 1px;
   }
 }
 
@@ -196,5 +196,101 @@
   .overlay-right {
     right: 0;
     transform: translateX(0);
+  }
+
+  .button--bubble__container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .button--bubble {
+    position: relative;
+    z-index: 2;
+    -webkit-font-smoothing: antialiased;
+    background-color: transparent;
+    border: none;
+    color: #fff;
+    display: inline-block;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 100;
+    text-decoration: none;
+    user-select: none;
+    letter-spacing: 1px;
+    padding: 20px 40px;
+    text-transform: uppercase;
+    transition: all 0.1s ease-out;
+    color: hsl(var(--primary));
+    border: 2px solid hsl(var(--primary));
+    border-radius: 30px;
+    cursor: pointer;
+  }
+
+  .button--bubble:hover {
+    color: hsl(var(--primary-foreground));
+  }
+  
+  .button--bubble:active {
+    transform: scale(0.95);
+  }
+
+  .button--bubble:hover + .button--bubble__effect-container .circle {
+    background: hsl(var(--primary));
+  }
+
+  .button--bubble:hover + .button--bubble__effect-container .button {
+    background: hsl(var(--primary));
+  }
+
+  .button--bubble:active + .button--bubble__effect-container {
+    transform: scale(0.95);
+  }
+
+  .button--bubble__effect-container {
+    position: absolute;
+    display: block;
+    width: 200%;
+    height: 400%;
+    top: -150%;
+    left: -50%;
+    -webkit-filter: url("#goo");
+    filter: url("#goo");
+    transition: all 0.1s ease-out;
+    pointer-events: none;
+  }
+
+  .button--bubble__effect-container .circle {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border-radius: 15px;
+    background: hsl(var(--primary));
+    transition: background 0.1s ease-out;
+  }
+  
+  .button--bubble__effect-container .circle.top-left {
+    top: 40%;
+    left: 27%;
+  }
+
+  .button--bubble__effect-container .circle.bottom-right {
+    bottom: 40%;
+    right: 27%;
+  }
+
+  .button--bubble__container .effect-button {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    border-radius: 30px;
+    background: transparent;
+    transition: background 0.2s ease-out;
+  }
+
+  .button--bubble:hover + .button--bubble__effect-container .effect-button {
+    background: hsl(var(--primary));
   }
 }
