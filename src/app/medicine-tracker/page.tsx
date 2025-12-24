@@ -7,11 +7,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import {
-  useCollection,
   useFirestore,
   useUser,
-  useMemoFirebase,
   addDocumentNonBlocking,
+  useCollection,
+  useMemoFirebase,
 } from '@/firebase';
 
 import {
@@ -54,19 +54,18 @@ import {
 } from 'lucide-react';
 
 /* ---------------- ZOD SCHEMA ---------------- */
-const medicineSchema = z.object({
-  name: z.string().min(2, 'Name required'),
-  dosage: z.string().min(1, 'Dosage required'),
-  times: z.array(z.string()).min(1),
-  reminderEnabled: z.boolean().default(false),
-  reminderEmail: z.string().email().optional(),
-}).refine(
-  (data) => !data.reminderEnabled || !!data.reminderEmail,
-  {
+const medicineSchema = z
+  .object({
+    name: z.string().min(2, 'Name required'),
+    dosage: z.string().min(1, 'Dosage required'),
+    times: z.array(z.string()).min(1, 'Please select at least one time'),
+    reminderEnabled: z.boolean().default(false),
+    reminderEmail: z.string().email().optional().or(z.literal('')),
+  })
+  .refine((data) => !data.reminderEnabled || !!data.reminderEmail, {
     message: 'Email required when reminder is enabled',
     path: ['reminderEmail'],
-  }
-);
+  });
 
 type Medicine = {
   id: string;
@@ -101,9 +100,7 @@ const MedicineCard = ({ medicine }: { medicine: Medicine }) => {
             )}
           </div>
         ) : (
-          <div className="text-sm text-gray-500">
-            🔕 Reminder OFF
-          </div>
+          <div className="text-sm text-gray-500">🔕 Reminder OFF</div>
         )}
 
         {medicine.reminderEnabled && (
@@ -132,7 +129,7 @@ const AddMedicineDialog = ({ onAdded }: { onAdded: () => void }) => {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
 
-  const form = useForm({
+  const form = useForm<z.infer<typeof medicineSchema>>({
     resolver: zodResolver(medicineSchema),
     defaultValues: {
       name: '',
@@ -143,11 +140,11 @@ const AddMedicineDialog = ({ onAdded }: { onAdded: () => void }) => {
     },
   });
 
-  const onSubmit = async (values: any) => {
+  const onSubmit = (values: z.infer<typeof medicineSchema>) => {
     if (!user || !firestore) return;
 
     try {
-      await addDocumentNonBlocking(
+      addDocumentNonBlocking(
         collection(firestore, `users/${user.uid}/medicines`),
         {
           ...values,
@@ -213,32 +210,55 @@ const AddMedicineDialog = ({ onAdded }: { onAdded: () => void }) => {
             />
 
             <FormField
-              name="times"
               control={form.control}
-              render={({ field }) => (
+              name="times"
+              render={() => (
                 <FormItem>
-                  <FormLabel>Time</FormLabel>
+                  <div className="mb-4">
+                    <FormLabel className="text-base">
+                      Time of Day
+                    </FormLabel>
+                  </div>
                   <div className="flex gap-3">
-                    {times.map((t) => (
-                      <label key={t} className="flex items-center gap-2">
-                        <Checkbox
-                          checked={field.value.includes(t)}
-                          onCheckedChange={(c) =>
-                            c
-                              ? field.onChange([...field.value, t])
-                              : field.onChange(
-                                  field.value.filter((v: string) => v !== t)
-                                )
-                          }
-                        />
-                        {t}
-                      </label>
-                    ))}
+                  {times.map((item) => (
+                    <FormField
+                      key={item}
+                      control={form.control}
+                      name="times"
+                      render={({ field }) => {
+                        return (
+                          <FormItem
+                            key={item}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                          >
+                            <FormControl>
+                              <Checkbox
+                                checked={field.value?.includes(item)}
+                                onCheckedChange={(checked) => {
+                                  return checked
+                                    ? field.onChange([...field.value, item])
+                                    : field.onChange(
+                                        field.value?.filter(
+                                          (value) => value !== item
+                                        )
+                                      )
+                                }}
+                              />
+                            </FormControl>
+                            <FormLabel className="font-normal">
+                              {item}
+                            </FormLabel>
+                          </FormItem>
+                        )
+                      }}
+                    />
+                  ))}
                   </div>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
 
             <FormField
               name="reminderEnabled"
@@ -291,23 +311,21 @@ export default function MedicineTrackerPage() {
   const medicinesRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
     return collection(firestore, `users/${user.uid}/medicines`);
-  }, [firestore, user?.uid]);
+  }, [firestore, user]);
 
-  const { data: medicines, isLoading } =
-    useCollection<Medicine>(medicinesRef);
+  const { data: medicines, isLoading } = useCollection<Medicine>(medicinesRef);
 
-  if (isUserLoading) {
-    return <LoaderCircle className="animate-spin mx-auto mt-20" />;
-  }
-
-  if (!user) {
-    router.replace('/login');
-    return null;
+  if (isUserLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <LoaderCircle className="animate-spin" />
+      </div>
+    );
   }
 
   return (
     <div className="p-6">
-      <header className="flex items-center gap-4 mb-6">
+      <header className="mb-6 flex items-center gap-4">
         <Button variant="ghost" onClick={() => router.push('/dashboard')}>
           <ArrowLeft /> Dashboard
         </Button>
@@ -317,9 +335,11 @@ export default function MedicineTrackerPage() {
       <AddMedicineDialog onAdded={() => {}} />
 
       {isLoading ? (
-        <LoaderCircle className="animate-spin mx-auto mt-10" />
+        <div className="mt-10 flex justify-center">
+          <LoaderCircle className="animate-spin" />
+        </div>
       ) : medicines && medicines.length > 0 ? (
-        <div className="grid gap-4 mt-6">
+        <div className="mt-6 grid gap-4">
           {medicines.map((med) => (
             <MedicineCard key={med.id} medicine={med} />
           ))}

@@ -7,10 +7,8 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
-  useDoc,
   useFirestore,
   useUser,
-  useMemoFirebase,
   updateDocumentNonBlocking,
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
@@ -39,6 +37,8 @@ import {
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useDoc, useMemoFirebase } from '@/firebase/firestore/use-doc';
+
 
 const profileSchema = z.object({
   age: z.coerce
@@ -114,6 +114,13 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isMounted, setIsMounted] = useState(false);
 
+  const userProfileRef = useMemoFirebase(() => {
+    if (!firestore || !user?.uid) return null;
+    return doc(firestore, `users/${user.uid}`);
+  }, [firestore, user]);
+
+  const { data: userProfile, isLoading: isProfileLoading } = useDoc(userProfileRef);
+
   const {
     control,
     handleSubmit,
@@ -122,23 +129,15 @@ export default function ProfilePage() {
   } = useForm({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      age: 0,
-      weight: 0,
-      height: 0,
+      age: userProfile?.age || 0,
+      weight: userProfile?.weight || 0,
+      height: userProfile?.height || 0,
     },
   });
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
-
-  const userProfileRef = useMemoFirebase(() => {
-    if (!firestore || !user?.uid) return null;
-    return doc(firestore, `users/${user.uid}`);
-  }, [firestore, user?.uid]);
-
-  const { data: userProfile, isLoading: isProfileLoading } =
-    useDoc(userProfileRef);
 
   useEffect(() => {
     if (userProfile) {
@@ -209,7 +208,7 @@ export default function ProfilePage() {
       });
     }, 500); // Simulate a short delay for UX
   };
-  
+
   const getInitials = (name: string) => {
     if (!name) return '';
     const names = name.split(' ');
@@ -217,7 +216,7 @@ export default function ProfilePage() {
     return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
   };
 
-  if (isUserLoading || isProfileLoading || !userProfile) {
+  if (isUserLoading || isProfileLoading || !userProfile || !isMounted) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
@@ -238,17 +237,22 @@ export default function ProfilePage() {
           Back to Dashboard
         </Button>
 
-        <Card className={cn(
-            "overflow-hidden shadow-lg transition-transform duration-500 ease-out",
-            isMounted ? "translate-x-0" : "-translate-x-full"
-          )}>
-          <CardHeader className="bg-gradient-to-r from-primary to-green-400 p-6 sm:p-8 text-white">
+        <Card
+          className={cn(
+            'overflow-hidden shadow-lg transition-transform duration-500 ease-out',
+            isMounted ? 'translate-x-0' : '-translate-x-full'
+          )}
+        >
+          <CardHeader className="bg-gradient-to-r from-primary to-green-400 p-6 text-white sm:p-8">
             <div className="flex items-start justify-between">
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Avatar className="h-24 w-24 border-4 border-white/80">
-                    <AvatarImage src={userProfile.photoURL} alt={userProfile.username}/>
-                    <AvatarFallback className="bg-white/30 text-white text-3xl">
+                    <AvatarImage
+                      src={userProfile.photoURL}
+                      alt={userProfile.username}
+                    />
+                    <AvatarFallback className="bg-white/30 text-3xl text-white">
                       {getInitials(userProfile.username)}
                     </AvatarFallback>
                   </Avatar>
@@ -266,7 +270,11 @@ export default function ProfilePage() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isUploading || isEditing}
                   >
-                    {isUploading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Edit className="h-4 w-4" />}
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Edit className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 <div className="flex-1">
@@ -279,59 +287,77 @@ export default function ProfilePage() {
                 </div>
               </div>
               {!isEditing ? (
-                 <Button variant="outline" size="sm" onClick={handleEditToggle} className="bg-white/20 border-white/50 text-white hover:bg-white/30">
-                    <Edit className="mr-2 h-4 w-4"/>
-                    Edit Profile
-                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleEditToggle}
+                  className="border-white/50 bg-white/20 text-white hover:bg-white/30"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit Profile
+                </Button>
               ) : (
                 <div className="flex gap-2">
-                   <Button variant="ghost" size="sm" onClick={handleEditToggle} className="text-white hover:bg-white/20 hover:text-white">
-                      <X className="mr-2 h-4 w-4"/>
-                      Cancel
-                   </Button>
-                   <Button onClick={handleSubmit(onSubmit)} size="sm" disabled={isSaving || !isDirty}>
-                      {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Save className="mr-2 h-4 w-4"/>}
-                      Save
-                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleEditToggle}
+                    className="text-white hover:bg-white/20 hover:text-white"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmit(onSubmit)}
+                    size="sm"
+                    disabled={isSaving || !isDirty}
+                  >
+                    {isSaving ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save
+                  </Button>
                 </div>
               )}
             </div>
           </CardHeader>
           <CardContent className="p-6">
             <form onSubmit={handleSubmit(onSubmit)}>
-               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 {!isEditing ? (
                   <>
-                     <InfoCard
-                        icon={<Mail className="h-6 w-6" />}
-                        label="Email"
-                        value={userProfile.email}
+                    <InfoCard
+                      icon={<Mail className="h-6 w-6" />}
+                      label="Email"
+                      value={userProfile.email}
                     />
                     <InfoCard
-                        icon={<Activity className="h-6 w-6" />}
-                        label="Age"
-                        value={userProfile.age}
-                        unit="years"
+                      icon={<Activity className="h-6 w-6" />}
+                      label="Age"
+                      value={userProfile.age}
+                      unit="years"
                     />
                     <InfoCard
-                        icon={<Scale className="h-6 w-6" />}
-                        label="Weight"
-                        value={userProfile.weight}
-                        unit="kg"
+                      icon={<Scale className="h-6 w-6" />}
+                      label="Weight"
+                      value={userProfile.weight}
+                      unit="kg"
                     />
                     <InfoCard
-                        icon={<Ruler className="h-6 w-6" />}
-                        label="Height"
-                        value={userProfile.height}
-                        unit="cm"
+                      icon={<Ruler className="h-6 w-6" />}
+                      label="Height"
+                      value={userProfile.height}
+                      unit="cm"
                     />
                   </>
                 ) : (
                   <>
                     <InfoCard
-                        icon={<Mail className="h-6 w-6" />}
-                        label="Email"
-                        value={userProfile.email}
+                      icon={<Mail className="h-6 w-6" />}
+                      label="Email"
+                      value={userProfile.email}
                     />
                     <EditableInfoField
                       control={control}
@@ -353,7 +379,7 @@ export default function ProfilePage() {
                     />
                   </>
                 )}
-               </div>
+              </div>
             </form>
           </CardContent>
         </Card>
@@ -361,5 +387,3 @@ export default function ProfilePage() {
     </div>
   );
 }
-
-    

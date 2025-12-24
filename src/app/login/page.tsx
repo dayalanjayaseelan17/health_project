@@ -1,21 +1,21 @@
 
-"use client";
+'use client';
 
-import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Form,
   FormControl,
   FormField,
   FormItem,
   FormMessage,
-} from "@/components/ui/form";
-import { useToast } from "@/hooks/use-toast";
+} from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 import {
   User,
   Calendar,
@@ -24,17 +24,13 @@ import {
   Mail,
   Lock,
   LoaderCircle,
-} from "lucide-react";
-import {
-  useAuth,
-  useFirestore,
-  setDocumentNonBlocking,
-  useUser,
-} from "@/firebase";
+} from 'lucide-react';
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
-} from "firebase/auth";
+} from 'firebase/auth';
 import {
   doc,
   collection,
@@ -42,26 +38,26 @@ import {
   where,
   getDocs,
   limit,
-} from "firebase/firestore";
+} from 'firebase/firestore';
 
 /* ---------------- SCHEMAS ---------------- */
 
 const signUpSchema = z.object({
   username: z
     .string()
-    .min(3, { message: "Username must be at least 3 characters." }),
-  email: z.string().email({ message: "Please enter a valid email." }),
+    .min(3, { message: 'Username must be at least 3 characters.' }),
+  email: z.string().email({ message: 'Please enter a valid email.' }),
   password: z
     .string()
-    .min(6, { message: "Password must be at least 6 characters." }),
+    .min(6, { message: 'Password must be at least 6 characters.' }),
   age: z.coerce.number().min(1).max(120),
-  height: z.coerce.number().min(50, { message: "Height in cm" }),
-  weight: z.coerce.number().min(10, { message: "Weight in kg" }),
+  height: z.coerce.number().min(50, { message: 'Height in cm' }),
+  weight: z.coerce.number().min(10, { message: 'Weight in kg' }),
 });
 
 const signInSchema = z.object({
-  username: z.string().min(1, { message: "Username is required." }),
-  password: z.string().min(1, { message: "Password is required." }),
+  username: z.string().min(1, { message: 'Username is required.' }),
+  password: z.string().min(1, { message: 'Password is required.' }),
 });
 
 /* ---------------- SIGN IN ---------------- */
@@ -74,23 +70,31 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { username: "", password: "" },
+    defaultValues: { username: '', password: '' },
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
+    if (!auth || !firestore) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Firebase service is not available. Please try again later.',
+      });
+      return;
+    }
     setLoading(true);
     try {
       // 1. Find user by username to get their email
-      const usersRef = collection(firestore!, "users");
+      const usersRef = collection(firestore, 'users');
       const q = query(
         usersRef,
-        where("username", "==", values.username),
+        where('username', '==', values.username),
         limit(1)
       );
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        throw new Error("Username not found");
+        throw new Error('Username not found');
       }
 
       const userDoc = querySnapshot.docs[0];
@@ -99,21 +103,21 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       // 2. Sign in with the retrieved email and provided password
       await signInWithEmailAndPassword(auth, userEmail, values.password);
 
-      toast({ title: "Login successful" });
+      toast({ title: 'Login successful' });
       onAuthSuccess();
     } catch (e: any) {
-      let description = "An unexpected error occurred. Please try again.";
-      if (e.message === "Username not found") {
-        description = "No account found with this username.";
-      } else if (e.code === "auth/wrong-password") {
-        description = "Incorrect password. Please try again.";
-      } else if (e.code === "auth/user-not-found") {
+      let description = 'An unexpected error occurred. Please try again.';
+      if (e.message === 'Username not found') {
+        description = 'No account found with this username.';
+      } else if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        description = 'Incorrect password. Please try again.';
+      } else if (e.code === 'auth/user-not-found') {
         description =
           "No account found associated with this username's email.";
       }
       toast({
-        variant: "destructive",
-        title: "Login Failed",
+        variant: 'destructive',
+        title: 'Login Failed',
         description,
       });
     } finally {
@@ -126,7 +130,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="h-full flex flex-col justify-center px-12 space-y-4"
+          className="flex h-full flex-col justify-center space-y-4 px-12"
         >
           <h1 className="text-3xl font-bold">Sign In</h1>
 
@@ -137,12 +141,8 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <Input
-                      placeholder="Username"
-                      {...field}
-                      className="pl-10"
-                    />
+                    <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                    <Input placeholder="Username" {...field} className="pl-10" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -157,7 +157,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                     <Input
                       type="password"
                       placeholder="Password"
@@ -196,26 +196,34 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
     defaultValues: {
-      username: "",
-      email: "",
-      password: "",
+      username: '',
+      email: '',
+      password: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
+    if (!auth || !firestore) {
+       toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description: 'Firebase service is not available. Please try again later.',
+      });
+      return;
+    }
     setLoading(true);
 
     try {
       // 1. Check if username is unique
-      const usersRef = collection(firestore!, "users");
+      const usersRef = collection(firestore, 'users');
       const q = query(
         usersRef,
-        where("username", "==", values.username),
+        where('username', '==', values.username),
         limit(1)
       );
       const usernameSnap = await getDocs(q);
       if (!usernameSnap.empty) {
-        throw new Error("Username already taken, please choose another");
+        throw new Error('Username already taken, please choose another');
       }
 
       // 2. Create user with email and password
@@ -233,26 +241,26 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         age: values.age,
         height: values.height,
         weight: values.weight,
+        photoURL: null,
       };
 
-      setDocumentNonBlocking(
-        doc(firestore!, `users/${cred.user.uid}`),
-        userProfile,
-        { merge: true }
-      );
+      // This is a non-blocking write. It's fast, and the UI will update optimistically.
+      setDocumentNonBlocking(doc(firestore, `users/${cred.user.uid}`), userProfile, {
+        merge: true,
+      });
 
-      toast({ title: "Account created successfully!" });
+      toast({ title: 'Account created successfully!' });
       onAuthSuccess();
     } catch (e: any) {
-      let description = "An unexpected error occurred.";
-      if (e.message === "Username already taken, please choose another") {
+      let description = 'An unexpected error occurred.';
+      if (e.message === 'Username already taken, please choose another') {
         description = e.message;
-      } else if (e.code === "auth/email-already-in-use") {
-        description = "This email is already registered. Please sign in.";
+      } else if (e.code === 'auth/email-already-in-use') {
+        description = 'This email is already registered. Please sign in.';
       }
       toast({
-        variant: "destructive",
-        title: "Sign Up Failed",
+        variant: 'destructive',
+        title: 'Sign Up Failed',
         description,
       });
     } finally {
@@ -265,9 +273,9 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="h-full flex flex-col justify-center px-12 space-y-2"
+          className="flex h-full flex-col justify-center space-y-2 px-12"
         >
-          <h1 className="text-3xl font-bold mb-2">Create Account</h1>
+          <h1 className="mb-2 text-3xl font-bold">Create Account</h1>
 
           <FormField
             control={form.control}
@@ -276,12 +284,8 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-                    <Input
-                      placeholder="Username"
-                      {...field}
-                      className="pl-10"
-                    />
+                    <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+                    <Input placeholder="Username" {...field} className="pl-10" />
                   </div>
                 </FormControl>
                 <FormMessage />
@@ -296,7 +300,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                     <Input placeholder="Email" {...field} className="pl-10" />
                   </div>
                 </FormControl>
@@ -312,7 +316,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
               <FormItem>
                 <FormControl>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                     <Input
                       type="password"
                       placeholder="Password"
@@ -334,7 +338,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                 <FormItem>
                   <FormControl>
                     <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                      <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                       <Input
                         type="number"
                         placeholder="Age"
@@ -355,7 +359,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <Ruler className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Ruler className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                         <Input
                           type="number"
                           placeholder="Height (cm)"
@@ -375,7 +379,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
                   <FormItem>
                     <FormControl>
                       <div className="relative">
-                        <Weight className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+                        <Weight className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
                         <Input
                           type="number"
                           placeholder="Weight (kg)"
@@ -410,10 +414,8 @@ const LoginPageContent = () => {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
-  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
     const action = searchParams.get('action');
     if (action === 'signup') {
       setRightPanel(true);
@@ -423,12 +425,12 @@ const LoginPageContent = () => {
   // If user is logged in (and not anonymous), redirect to dashboard
   useEffect(() => {
     if (!isUserLoading && user && !user.isAnonymous) {
-      router.replace("/dashboard");
+      router.replace('/dashboard');
     }
   }, [user, isUserLoading, router]);
 
   const handleAuthSuccess = () => {
-    router.replace("/dashboard");
+    router.replace('/dashboard');
   };
 
   if (isUserLoading || (user && !user.isAnonymous)) {
@@ -440,9 +442,9 @@ const LoginPageContent = () => {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
       <div
-        className={`container-main ${rightPanel ? "right-panel-active" : ""}`}
+        className={`container-main ${rightPanel ? 'right-panel-active' : ''}`}
       >
         <SignUpForm onAuthSuccess={handleAuthSuccess} />
         <SignInForm onAuthSuccess={handleAuthSuccess} />
@@ -452,11 +454,12 @@ const LoginPageContent = () => {
             <div className="overlay-panel overlay-left">
               <h1 className="text-4xl font-bold">Welcome Back!</h1>
               <p className="mt-4 text-center">
-                Your health is your greatest wealth. Sign in to continue your wellness journey with us.
+                Your health is your greatest wealth. Sign in to continue your
+                wellness journey with us.
               </p>
               <Button
                 variant="outline"
-                className="mt-6 bg-transparent border-white text-white hover:bg-white/20"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
                 onClick={() => setRightPanel(false)}
               >
                 Sign In
@@ -465,11 +468,12 @@ const LoginPageContent = () => {
             <div className="overlay-panel overlay-right">
               <h1 className="text-4xl font-bold">New to our Community?</h1>
               <p className="mt-4 text-center">
-                Join us today! Create an account to get personalized health insights and take the first step towards a healthier you.
+                Join us today! Create an account to get personalized health
+                insights and take the first step towards a healthier you.
               </p>
               <Button
                 variant="outline"
-                className="mt-6 bg-transparent border-white text-white hover:bg-white/20"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
                 onClick={() => setRightPanel(true)}
               >
                 Sign Up
@@ -480,18 +484,20 @@ const LoginPageContent = () => {
       </div>
     </div>
   );
-}
+};
 
 /* ---------------- PAGE WRAPPER ---------------- */
 // This helps with Next.js Suspense for useSearchParams
 export default function LoginPage() {
   return (
-    <Suspense fallback={
-      <div className="flex min-h-screen items-center justify-center bg-green-50">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    }>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center bg-green-50">
+          <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
+        </div>
+      }
+    >
       <LoginPageContent />
     </Suspense>
-  )
+  );
 }

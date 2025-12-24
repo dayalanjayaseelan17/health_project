@@ -8,32 +8,37 @@ import {
   type DiagnoseSymptomsInput,
 } from "@/ai/flows/diagnose-symptoms-flow";
 import { AlertTriangle, HeartPulse, ShieldCheck, MapPinned } from "lucide-react";
-import { useDoc, useUser, useFirestore, useMemoFirebase, useAuth } from "@/firebase";
+import { useUser, useFirestore, useAuth } from "@/firebase";
 import { doc } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
+import { useDoc, useMemoFirebase } from "@/firebase/firestore/use-doc";
+
 
 type RiskLevel = "Green" | "Yellow" | "Red";
+// This is a simplified categorization for the purpose of the demo.
+// A real app would have a more sophisticated mapping.
 type ProblemType = "Heart" | "Brain" | "Skin" | "Bone" | "General";
 
 /* ---------------- GOOGLE MAPS URL BUILDER ---------------- */
 
-const getSpecialistSearchQuery = (problemType: ProblemType): string => {
-  switch (problemType) {
-    case "Heart":
-      return "cardiology hospital near me";
-    case "Brain":
-      return "neurology hospital near me";
-    case "Skin":
-      return "dermatology hospital near me";
-    case "Bone":
-      return "orthopedic hospital near me";
-    default:
-      return "general hospital near me";
-  }
+const getSpecialistSearchQuery = (analysis: string): ProblemType => {
+  const lowerCaseAnalysis = analysis.toLowerCase();
+  if (lowerCaseAnalysis.includes('cardiac') || lowerCaseAnalysis.includes('heart')) return 'Heart';
+  if (lowerCaseAnalysis.includes('neurological') || lowerCaseAnalysis.includes('brain')) return 'Brain';
+  if (lowerCaseAnalysis.includes('dermatological') || lowerCaseAnalysis.includes('skin')) return 'Skin';
+  if (lowerCaseAnalysis.includes('orthopedic') || lowerCaseAnalysis.includes('bone') || lowerCaseAnalysis.includes('fracture')) return 'Bone';
+  return 'General';
 };
 
 const buildGoogleMapsUrl = (problemType: ProblemType): string => {
-  const query = encodeURIComponent(getSpecialistSearchQuery(problemType));
+  const queryMap: Record<ProblemType, string> = {
+    Heart: "cardiology hospital near me",
+    Brain: "neurology hospital near me",
+    Skin: "dermatology hospital near me",
+    Bone: "orthopedic hospital near me",
+    General: "general hospital near me",
+  };
+  const query = encodeURIComponent(queryMap[problemType]);
   return `https://www.google.com/maps/search/?api=1&query=${query}`;
 };
 
@@ -67,14 +72,14 @@ const ResultCard: React.FC<{
 
   return (
     <div className={`w-full max-w-md rounded-2xl border-2 p-6 shadow-lg ${bg}`}>
-      <div className="flex justify-center mb-4">{icon}</div>
-      <h2 className="text-3xl font-bold text-center mb-2">{title}</h2>
-      <p className="text-lg text-center font-semibold mb-4">{analysis}</p>
+      <div className="mb-4 flex justify-center">{icon}</div>
+      <h2 className="mb-2 text-center text-3xl font-bold">{title}</h2>
+      <p className="mb-4 text-center text-lg font-semibold">{analysis}</p>
 
       {precautions && precautions.length > 0 && (
         <div className="mt-4">
-          <h3 className="font-semibold text-lg mb-2">What you can do now:</h3>
-          <ul className="list-disc pl-5 space-y-1">
+          <h3 className="mb-2 text-lg font-semibold">What you can do now:</h3>
+          <ul className="list-disc space-y-1 pl-5">
             {precautions.map((tip, i) => (
               <li key={i}>{tip}</li>
             ))}
@@ -83,7 +88,7 @@ const ResultCard: React.FC<{
       )}
 
       {nextAction && (
-        <p className="mt-4 font-medium text-center">
+        <p className="mt-4 text-center font-medium">
           Next step: {nextAction}
         </p>
       )}
@@ -106,7 +111,7 @@ export default function ResultPage() {
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
     return doc(firestore, `users/${user.uid}`);
-  }, [firestore, user?.uid, user?.isAnonymous]);
+  }, [firestore, user]);
 
   const { data: userProfile, isLoading: isProfileLoading } =
     useDoc(userProfileRef);
@@ -118,7 +123,12 @@ export default function ResultPage() {
   }, [user, isUserLoading, router]);
 
   useEffect(() => {
-    if (isUserLoading || isProfileLoading || !user) return;
+    // Wait for all user data to be loaded
+    if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) return;
+    
+    // Ensure this runs only once after user data is confirmed
+    if (!user) return;
+
 
     const fetchResult = async () => {
       let description: string | null = null;
@@ -135,8 +145,8 @@ export default function ResultPage() {
       }
       
       if (!description && !image) {
-        setError("No symptoms were provided. Please go back and describe your symptoms.");
-        setLoading(false);
+        // Redirect if no data is present, as it might be a stale page visit
+        router.replace('/symptoms');
         return;
       }
 
@@ -144,13 +154,13 @@ export default function ResultPage() {
         const input: DiagnoseSymptomsInput = {
           description: description || "",
           photoDataUri: image || undefined,
-          userDetails: user.isAnonymous
+          userDetails: user.isAnonymous || !userProfile
             ? {}
             : {
-                name: userProfile?.username,
-                age: String(userProfile?.age),
-                weight: String(userProfile?.weight),
-                gender: userProfile?.gender,
+                name: userProfile.username,
+                age: String(userProfile.age),
+                weight: String(userProfile.weight),
+                gender: (userProfile as any).gender, // Add gender if available
               },
         };
 
@@ -176,7 +186,7 @@ export default function ResultPage() {
     };
 
     fetchResult();
-  }, [user, isUserLoading, isProfileLoading, userProfile]);
+  }, [user, isUserLoading, userProfile, isProfileLoading, router]);
 
   const handleNextStep = () => {
     if (user?.isAnonymous) {
@@ -187,11 +197,11 @@ export default function ResultPage() {
   }
 
   const handleSignOut = () => {
-    auth.signOut();
+    auth?.signOut();
     router.push('/login');
   }
 
-  if (loading || isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
+  if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
         <div className="w-16 h-16 border-4 border-dashed border-green-600 rounded-full animate-spin" />
@@ -232,7 +242,7 @@ export default function ResultPage() {
       {result.hospitalRequired && (
         <Button
           onClick={() =>
-            window.open(buildGoogleMapsUrl(result.problemType as ProblemType), "_blank")
+            window.open(buildGoogleMapsUrl(getSpecialistSearchQuery(result.analysis)), "_blank")
           }
           className="mt-6 w-full max-w-md bg-blue-600 text-white py-3 rounded-lg text-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-700"
         >

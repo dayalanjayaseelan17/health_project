@@ -1,19 +1,19 @@
 
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useUser } from "@/firebase";
-import { useToast } from "@/hooks/use-toast";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Upload } from "lucide-react";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useUser } from '@/firebase';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Upload } from 'lucide-react';
 
 export default function SymptomsPage() {
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState('');
   const [image, setImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const router = useRouter();
@@ -26,15 +26,15 @@ export default function SymptomsPage() {
     if (!isUserLoading) {
       if (!user) {
         toast({
-          variant: "destructive",
-          title: "Authentication Required",
-          description: "Redirecting to login.",
+          variant: 'destructive',
+          title: 'Authentication Required',
+          description: 'Redirecting to login.',
         });
-        router.replace("/login");
+        router.replace('/login');
       } else if (user.isAnonymous) {
         toast({
-          title: "Anonymous Session",
-          description: "You can check your symptoms now.",
+          title: 'Anonymous Session',
+          description: 'You can check your symptoms now.',
         });
       }
     }
@@ -45,6 +45,16 @@ export default function SymptomsPage() {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Limit file size to 4MB
+    if (file.size > 4 * 1024 * 1024) {
+      toast({
+        variant: "destructive",
+        title: "Image too large",
+        description: "Please upload an image smaller than 4MB.",
+      });
+      return;
+    }
 
     setImage(file);
 
@@ -61,39 +71,42 @@ export default function SymptomsPage() {
     e.preventDefault();
 
     if (!description && !image) {
-      setError("Please describe your problem or upload an image.");
+      setError('Please describe your problem or upload an image.');
       return;
     }
 
-    setError("");
+    setError('');
     setLoading(true);
 
-    localStorage.setItem("symptomDescription", description);
-    localStorage.removeItem("symptomImage");
+    try {
+      localStorage.setItem('symptomDescription', description);
+      localStorage.removeItem('symptomImage'); // Clear previous image
 
-    if (image) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        if (typeof reader.result === "string") {
-          localStorage.setItem("symptomImage", reader.result);
-        }
-        router.push("/result");
-      };
-      reader.onerror = () => {
-        setError("Failed to read image file.");
-        setLoading(false);
-      };
-      setLoading(true);
-
-      reader.readAsDataURL(image);
-    } else {
-      router.push("/result");
+      if (image) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') {
+            localStorage.setItem('symptomImage', reader.result);
+          }
+          router.push('/result');
+        };
+        reader.onerror = () => {
+          setError('Failed to read image file.');
+          setLoading(false);
+        };
+        reader.readAsDataURL(image);
+      } else {
+        router.push('/result');
+      }
+    } catch (storageError) {
+       setError('Could not save symptom data. Your browser storage might be full or disabled.');
+       setLoading(false);
     }
   };
 
   /* ---------------- LOADING STATE ---------------- */
 
-  if (isUserLoading || !user) {
+  if (isUserLoading) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 text-center">
         <Loader2 className="h-12 w-12 animate-spin text-primary" />
@@ -104,6 +117,17 @@ export default function SymptomsPage() {
       </div>
     );
   }
+  
+  if (!user) {
+    // This state is temporary while the redirect to /login happens.
+    // Showing a loader prevents a flash of the form.
+     return (
+      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 p-4 text-center">
+        <Loader2 className="h-12 w-12 animate-spin text-primary" />
+      </div>
+    );
+  }
+
 
   /* ---------------- UI ---------------- */
 
@@ -142,22 +166,23 @@ export default function SymptomsPage() {
 
             <label
               htmlFor="image-upload"
-              className="flex flex-col items-center justify-center w-full h-48 border-2 border-dashed rounded-lg cursor-pointer border-gray-300 bg-gray-50 hover:bg-gray-100"
+              className="flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100"
             >
               {imagePreview ? (
                 <img
                   src={imagePreview}
                   alt="Preview"
-                  className="h-full w-full object-contain rounded-md"
+                  className="h-full w-full rounded-md object-contain"
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center">
-                  <Upload className="h-8 w-8 text-gray-500 mb-2" />
+                  <Upload className="mb-2 h-8 w-8 text-gray-500" />
                   <p className="text-sm text-gray-500">
-                    <span className="font-semibold">Click to upload</span> or take a photo
+                    <span className="font-semibold">Click to upload</span> or
+                    take a photo
                   </p>
                   <p className="text-xs text-gray-500">
-                    PNG, JPG, JPEG supported
+                    PNG, JPG, JPEG supported (Max 4MB)
                   </p>
                 </div>
               )}
@@ -172,7 +197,7 @@ export default function SymptomsPage() {
               />
             </label>
             {image && (
-              <p className="text-sm text-center text-gray-500">
+              <p className="text-center text-sm text-gray-500">
                 Selected: {image.name}
               </p>
             )}
@@ -189,7 +214,7 @@ export default function SymptomsPage() {
           <Button
             type="submit"
             disabled={loading || (!description && !image)}
-            className="w-full text-lg font-semibold py-6 rounded-lg"
+            className="w-full rounded-lg py-6 text-lg font-semibold"
           >
             {loading ? (
               <>
@@ -197,7 +222,7 @@ export default function SymptomsPage() {
                 Analyzing Health...
               </>
             ) : (
-              "Check Health"
+              'Check Health'
             )}
           </Button>
 

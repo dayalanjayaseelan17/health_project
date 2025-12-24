@@ -1,16 +1,14 @@
 
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/firebase";
-import { initiateAnonymousSignIn } from "@/firebase/non-blocking-login";
-import { HeartPulse, User } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { motion, useAnimation, PanInfo } from "framer-motion";
-import { Button } from "@/components/ui/button";
-
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuth } from '@/firebase';
+import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+import { HeartPulse, User } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { motion, useAnimation } from 'framer-motion';
+import { Button } from '@/components/ui/button';
 
 const FeatureCard = ({
   icon,
@@ -27,105 +25,58 @@ const FeatureCard = ({
   onClick: () => void;
   isLoading: boolean;
 }) => {
-  const controls = useAnimation();
-
-  const handleHoverStart = () => {
-    controls.stop();
-    controls.start({
-      scale: [1, 1.2, 0.9, 1],
-      transition: { duration: 0.8, ease: "easeInOut" }
-    });
-  };
-
   return (
     <div className="flex h-full flex-col items-center justify-between rounded-xl bg-white/80 p-6 text-center shadow-lg backdrop-blur-sm transition-transform hover:scale-105">
       <div className="mb-4">{icon}</div>
       <h2 className="mb-2 text-2xl font-bold text-primary">{title}</h2>
       <p className="mb-6 flex-grow text-muted-foreground">{description}</p>
-      <div className="button--bubble__container">
-         <button
-            onClick={onClick}
-            disabled={isLoading}
-            className="button button--bubble"
-            onMouseEnter={handleHoverStart}
-          >
-            {isLoading ? "Please wait..." : buttonText}
-          </button>
-        <span className="button--bubble__effect-container">
-          <motion.span
-            className="circle top-left"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-          ></motion.span>
-          <motion.span
-            className="circle top-left"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-            transition={{ delay: 0.1 }}
-          ></motion.span>
-          <motion.span
-            className="circle top-left"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-            transition={{ delay: 0.2 }}
-          ></motion.span>
-
-          <span className="button effect-button"></span>
-
-          <motion.span
-            className="circle bottom-right"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-          ></motion.span>
-          <motion.span
-            className="circle bottom-right"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-            transition={{ delay: 0.1 }}
-          ></motion.span>
-          <motion.span
-            className="circle bottom-right"
-            initial={{ scale: 0, x: 0, y: 0 }}
-            animate={controls}
-            transition={{ delay: 0.2 }}
-          ></motion.span>
-        </span>
-      </div>
+      <Button onClick={onClick} disabled={isLoading} size="lg">
+        {isLoading ? 'Please wait...' : buttonText}
+      </Button>
     </div>
   );
 };
 
 export default function Home() {
-  const [loading, setLoading] = useState<"quick" | "login" | null>(null);
+  const [loading, setLoading] = useState<'quick' | 'login' | null>(null);
   const auth = useAuth();
   const router = useRouter();
   const { toast } = useToast();
 
   const handleQuickCheck = async () => {
-    setLoading("quick");
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Service Not Available',
+        description:
+          'The authentication service is not ready. Please try again in a moment.',
+      });
+      return;
+    }
+    setLoading('quick');
     try {
       // Non-blocking call. The onAuthStateChanged listener in the provider will handle the redirect.
       initiateAnonymousSignIn(auth);
       toast({
-        title: "Starting Anonymous Session",
-        description: "Redirecting to the health checker...",
+        title: 'Starting Anonymous Session',
+        description: 'Redirecting to the health checker...',
       });
       // The redirection will be handled by the auth state listener on the symptoms page
-      router.push("/symptoms");
+      router.push('/symptoms');
     } catch (error) {
-      console.error("Anonymous sign-in failed", error);
+      console.error('Anonymous sign-in failed', error);
       toast({
-        variant: "destructive",
-        title: "Anonymous Sign-In Failed",
-        description: "Could not start a quick check session. Please try again.",
+        variant: 'destructive',
+        title: 'Anonymous Sign-In Failed',
+        description: 'Could not start a quick check session. Please try again.',
       });
       setLoading(null);
     }
   };
 
   const handleLogin = () => {
-    setLoading("login");
-    router.push("/login");
+    setLoading('login');
+    router.push('/login');
   };
 
   return (
@@ -146,7 +97,7 @@ export default function Home() {
           description="Check your health condition instantly without creating an account."
           buttonText="Start Quick Check"
           onClick={handleQuickCheck}
-          isLoading={loading === "quick"}
+          isLoading={loading === 'quick'}
         />
         <FeatureCard
           icon={<User className="h-12 w-12 text-blue-500" />}
@@ -154,7 +105,7 @@ export default function Home() {
           description="Sign in or create an account to get personalized health insights and track your progress."
           buttonText="Sign In / Sign Up"
           onClick={handleLogin}
-          isLoading={loading === "login"}
+          isLoading={loading === 'login'}
         />
       </div>
     </main>
