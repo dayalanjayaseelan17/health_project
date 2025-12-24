@@ -12,10 +12,7 @@ import {
 } from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LoaderCircle,
@@ -26,62 +23,97 @@ import {
   HeartPulse,
   BarChart3,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, useAnimation } from 'framer-motion';
 
 const ActionCard = ({
   icon,
   title,
   description,
   onClick,
-  isAnimating,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
-  isAnimating: boolean;
 }) => {
+  const controls = useAnimation();
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleHoverStart = () => {
+    setIsHovered(true);
+    controls.stop();
+    controls.start({
+      scale: [1, 1.2, 0.9, 1],
+      transition: { duration: 0.8, ease: 'easeInOut' },
+    });
+  };
+
+  const handleHoverEnd = () => {
+    setIsHovered(false);
+  };
+
   return (
-    <motion.div
-      layout
-      className="relative aspect-square"
-      onClick={onClick}
-      initial={{ borderRadius: '1rem' }}
-      animate={{
-        scale: isAnimating ? 1.1 : 1,
-        zIndex: isAnimating ? 20 : 10,
-      }}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    <div
+      className="button--bubble__container aspect-square"
+      onMouseEnter={handleHoverStart}
+      onMouseLeave={handleHoverEnd}
     >
-      <Card className="h-full w-full cursor-pointer transition-shadow hover:shadow-lg">
-        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
-          <motion.div
-            animate={{
-              opacity: isAnimating ? 0 : 1,
-              scale: isAnimating ? 0.8 : 1,
-            }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="rounded-full bg-primary/10 p-3 text-primary">
-              {icon}
-            </div>
-            <div>
-              <h2 className="text-base font-bold">{title}</h2>
-              <p className="text-xs text-muted-foreground">{description}</p>
-            </div>
-          </motion.div>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <button onClick={onClick} className="button button--bubble h-full w-full">
+        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
+          <div className={`transition-colors ${isHovered ? 'text-white' : 'text-primary'}`}>{icon}</div>
+          <div>
+            <h2 className={`text-base font-bold transition-colors ${isHovered ? 'text-white' : ''}`}>{title}</h2>
+            <p className={`text-xs transition-colors ${isHovered ? 'text-white/80' : 'text-muted-foreground'}`}>{description}</p>
+          </div>
+        </div>
+      </button>
+      <span className="button--bubble__effect-container pointer-events-none">
+        <motion.span
+          className="circle top-left"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+        />
+        <motion.span
+          className="circle top-left"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+          transition={{ delay: 0.1 }}
+        />
+        <motion.span
+          className="circle top-left"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+          transition={{ delay: 0.2 }}
+        />
+        <span className="button effect-button" />
+        <motion.span
+          className="circle bottom-right"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+        />
+        <motion.span
+          className="circle bottom-right"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+          transition={{ delay: 0.1 }}
+        />
+        <motion.span
+          className="circle bottom-right"
+          initial={{ scale: 0, x: 0, y: 0 }}
+          animate={controls}
+          transition={{ delay: 0.2 }}
+        />
+      </span>
+    </div>
   );
 };
+
 
 export default function DashboardPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
-  const [opening, setOpening] = useState<string | null>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
@@ -103,13 +135,7 @@ export default function DashboardPage() {
   };
 
   const handleNavigation = (path: string) => {
-    if (opening) return;
-    setOpening(path);
-    setTimeout(() => {
-      router.push(path);
-      // Reset after navigation to re-enable clicks
-      setTimeout(() => setOpening(null), 500);
-    }, 400); // Wait for animation
+    router.push(path);
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
@@ -172,32 +198,15 @@ export default function DashboardPage() {
       </header>
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <motion.div
-          layout
+        <div
           className="mx-auto max-w-4xl"
-          initial={{ opacity: 1 }}
-          animate={{ opacity: opening ? 0 : 1 }}
         >
-          <motion.div
-            layout
-            initial={{ borderRadius: '1rem' }}
-            animate={{
-              scale: opening === '/symptoms' ? 1.1 : 1,
-              zIndex: opening === '/symptoms' ? 20 : 1,
-            }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-          >
             <Card
               className="mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl"
               onClick={() => handleNavigation('/symptoms')}
             >
               <CardContent className="flex items-center justify-between p-6">
-                <motion.div
-                  animate={{
-                    opacity: opening === '/symptoms' ? 0 : 1,
-                    scale: opening === '/symptoms' ? 0.8 : 1,
-                  }}
-                  transition={{ duration: 0.2 }}
+                <div
                   className="flex-1"
                 >
                   <h2 className="text-xl font-bold text-green-800">
@@ -206,7 +215,7 @@ export default function DashboardPage() {
                   <p className="text-green-700">
                     Get instant guidance by checking your symptoms.
                   </p>
-                </motion.div>
+                </div>
                 <Button
                   className="bg-primary text-white hover:bg-primary/90"
                   size="lg"
@@ -217,7 +226,6 @@ export default function DashboardPage() {
                 </Button>
               </CardContent>
             </Card>
-          </motion.div>
 
           <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
             <ActionCard
@@ -225,31 +233,27 @@ export default function DashboardPage() {
               title="My Profile"
               description="View and update your details"
               onClick={() => handleNavigation('/profile')}
-              isAnimating={opening === '/profile'}
             />
             <ActionCard
               icon={<ClipboardList className="h-8 w-8" />}
               title="Medicine Tracker"
               description="Manage your prescriptions"
               onClick={() => handleNavigation('#')}
-              isAnimating={opening === '#'}
             />
             <ActionCard
               icon={<CalendarDays className="h-8 w-8" />}
               title="Daily Tracker"
               description="Log your daily health metrics"
               onClick={() => handleNavigation('#')}
-              isAnimating={opening === '#'}
             />
             <ActionCard
               icon={<BarChart3 className="h-8 w-8" />}
               title="Health Bar"
               description="View your health summary"
               onClick={() => handleNavigation('#')}
-              isAnimating={opening === '#'}
             />
           </div>
-        </motion.div>
+        </div>
       </main>
     </div>
   );
