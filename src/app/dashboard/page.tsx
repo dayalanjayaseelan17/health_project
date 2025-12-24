@@ -11,30 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartConfig,
-} from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis } from 'recharts';
-import { LoaderCircle, User, Activity, TrendingUp, Scale, Ruler } from 'lucide-react';
-
-const chartData = [
-  { month: 'January', desktop: 186 },
-  { month: 'February', desktop: 305 },
-  { month: 'March', desktop: 237 },
-  { month: 'April', desktop: 73 },
-  { month: 'May', desktop: 209 },
-  { month: 'June', desktop: 214 },
-];
-
-const chartConfig = {
-  desktop: {
-    label: 'Health Score',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies ChartConfig;
+import { LoaderCircle, User, Activity, Scale, Ruler } from 'lucide-react';
 
 const StatCard = ({
   icon,
@@ -133,35 +110,6 @@ export default function DashboardPage() {
               value={userProfile.age}
               unit="years"
             />
-          </div>
-
-          <div className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-6 w-6 text-primary" />
-                  Health Trend
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ChartContainer config={chartConfig} className="h-[250px] w-full">
-                  <BarChart accessibilityLayer data={chartData}>
-                    <CartesianGrid vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tickLine={false}
-                      tickMargin={10}
-                      axisLine={false}
-                    />
-                    <ChartTooltip
-                      cursor={false}
-                      content={<ChartTooltipContent />}
-                    />
-                    <Bar dataKey="desktop" fill="var(--color-desktop)" radius={4} />
-                  </BarChart>
-                </ChartContainer>
-              </CardContent>
-            </Card>
           </div>
            <Button
             onClick={() => router.push("/symptoms")}
