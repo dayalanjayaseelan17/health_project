@@ -23,7 +23,6 @@ import {
   HeartPulse,
   BarChart3,
 } from 'lucide-react';
-import { motion } from 'framer-motion';
 
 const ActionCard = ({
   icon,
@@ -36,15 +35,8 @@ const ActionCard = ({
   description: string;
   onClick: () => void;
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
-    <button
-      onClick={onClick}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-      className="blob-btn group"
-    >
+    <button onClick={onClick} className="blob-btn group">
       <div className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center">
         <div className="text-primary transition-colors duration-500 group-hover:text-white">{icon}</div>
         <div>
