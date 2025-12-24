@@ -46,29 +46,38 @@ const ActionCard = ({
   isOpening: boolean;
   isFading: boolean;
 }) => (
-  <Card
+  <div
     className={cn(
-      'cursor-pointer transition-all duration-300 hover:scale-105 rounded-full aspect-square flex items-center justify-center text-center',
-      'bg-white/80 backdrop-blur-sm z-10',
+      'relative aspect-square flex items-center justify-center text-center transition-all duration-300',
       isOpening && 'scale-110 z-20',
       !isOpening && isFading && 'opacity-0 scale-90'
     )}
-    onClick={onClick}
   >
-    <CardHeader
-      className={cn(
-        'flex flex-col items-center gap-2 transition-opacity duration-200 p-4',
-        isOpening && 'opacity-0'
-      )}
-    >
-      <div className="rounded-full bg-primary/10 p-3 text-primary">{icon}</div>
-      <div>
-        <CardTitle className="text-base">{title}</CardTitle>
-        <CardDescription className="text-xs">{description}</CardDescription>
+    <button className="blob-btn w-full h-full" onClick={onClick}>
+      <div
+        className={cn(
+          'flex flex-col items-center gap-2 transition-opacity duration-200 p-4 z-10 relative',
+          isOpening && 'opacity-0'
+        )}
+      >
+        <div className="rounded-full bg-primary/10 p-3 text-primary">{icon}</div>
+        <div>
+          <CardTitle className="text-base">{title}</CardTitle>
+          <CardDescription className="text-xs">{description}</CardDescription>
+        </div>
       </div>
-    </CardHeader>
-  </Card>
+      <span className="blob-btn__inner">
+        <span className="blob-btn__blobs">
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+          <span className="blob-btn__blob"></span>
+        </span>
+      </span>
+    </button>
+  </div>
 );
+
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -102,12 +111,10 @@ export default function DashboardPage() {
   
     setOpening(cardId);
   
-    // Start fading other cards
     setTimeout(() => {
       setIsFading(true);
     }, 50);
   
-    // Wait for animation, then navigate
     setTimeout(() => {
       router.push(path);
     }, 500); 
@@ -205,44 +212,39 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <div className="blobs-container">
-            <div className="blob"></div>
-            <div className="blob"></div>
-            <div className="blob"></div>
-            <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-                <ActionCard
-                icon={<User className="h-8 w-8" />}
-                title="My Profile"
-                description="View and update your details"
-                onClick={() => handleNavigation('/profile', 'profile')}
-                isOpening={opening === 'profile'}
-                isFading={!!opening && opening !== 'profile'}
-                />
-                <ActionCard
-                icon={<ClipboardList className="h-8 w-8" />}
-                title="Medicine Tracker"
-                description="Manage your prescriptions"
-                onClick={() => handleNavigation('#', 'medicine')}
-                isOpening={opening === 'medicine'}
-                isFading={!!opening && opening !== 'medicine'}
-                />
-                <ActionCard
-                icon={<CalendarDays className="h-8 w-8" />}
-                title="Daily Tracker"
-                description="Log your daily health metrics"
-                onClick={() => handleNavigation('#', 'daily')}
-                isOpening={opening === 'daily'}
-                isFading={!!opening && opening !== 'daily'}
-                />
-                <ActionCard
-                icon={<BarChart3 className="h-8 w-8" />}
-                title="Health Bar"
-                description="View your health summary"
-                onClick={() => handleNavigation('#', 'healthbar')}
-                isOpening={opening === 'healthbar'}
-                isFading={!!opening && opening !== 'healthbar'}
-                />
-            </div>
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+              <ActionCard
+              icon={<User className="h-8 w-8" />}
+              title="My Profile"
+              description="View and update your details"
+              onClick={() => handleNavigation('/profile', 'profile')}
+              isOpening={opening === 'profile'}
+              isFading={!!opening && opening !== 'profile'}
+              />
+              <ActionCard
+              icon={<ClipboardList className="h-8 w-8" />}
+              title="Medicine Tracker"
+              description="Manage your prescriptions"
+              onClick={() => handleNavigation('#', 'medicine')}
+              isOpening={opening === 'medicine'}
+              isFading={!!opening && opening !== 'medicine'}
+              />
+              <ActionCard
+              icon={<CalendarDays className="h-8 w-8" />}
+              title="Daily Tracker"
+              description="Log your daily health metrics"
+              onClick={() => handleNavigation('#', 'daily')}
+              isOpening={opening === 'daily'}
+              isFading={!!opening && opening !== 'daily'}
+              />
+              <ActionCard
+              icon={<BarChart3 className="h-8 w-8" />}
+              title="Health Bar"
+              description="View your health summary"
+              onClick={() => handleNavigation('#', 'healthbar')}
+              isOpening={opening === 'healthbar'}
+              isFading={!!opening && opening !== 'healthbar'}
+              />
           </div>
         </div>
       </main>
