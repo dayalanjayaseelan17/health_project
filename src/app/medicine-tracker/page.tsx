@@ -301,7 +301,7 @@ export default function MedicineTrackerPage() {
   }
 
   if (!user) {
-    router.replace('/auth');
+    router.replace('/login');
     return null;
   }
 

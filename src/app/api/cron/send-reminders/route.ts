@@ -7,7 +7,7 @@ export async function GET() {
   try {
     await resend.emails.send({
       from: "Medicine Tracker <onboarding@resend.dev>",
-      to: ["YOUR_EMAIL@gmail.com"], // change this
+      to: ["dayalanmidhun@gmail.com"], // change this
       subject: "💊 Medicine Reminder",
       html: `
         <h2>Medicine Reminder</h2>
