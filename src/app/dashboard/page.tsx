@@ -1,12 +1,24 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useDoc, useFirestore, useUser, useMemoFirebase, useAuth } from '@/firebase';
+import {
+  useDoc,
+  useFirestore,
+  useUser,
+  useMemoFirebase,
+  useAuth,
+} from '@/firebase';
 import { doc } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LoaderCircle,
@@ -14,22 +26,28 @@ import {
   LogOut,
   ClipboardList,
   CalendarDays,
-  HeartPulse
+  HeartPulse,
 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const ActionCard = ({
   icon,
   title,
   description,
   onClick,
+  className,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
+  className?: string;
 }) => (
   <Card
-    className="cursor-pointer transition-transform hover:scale-105 hover:shadow-lg"
+    className={cn(
+      'cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg',
+      className
+    )}
     onClick={onClick}
   >
     <CardHeader className="flex flex-row items-center gap-4">
@@ -47,6 +65,7 @@ export default function DashboardPage() {
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [opening, setOpening] = useState<string | null>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
@@ -65,6 +84,13 @@ export default function DashboardPage() {
   const handleSignOut = () => {
     auth.signOut();
     router.push('/login');
+  };
+
+  const handleNavigation = (path: string, cardId: string) => {
+    setOpening(cardId);
+    setTimeout(() => {
+      router.push(path);
+    }, 300); // Wait for animation
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
@@ -89,12 +115,18 @@ export default function DashboardPage() {
       </div>
     );
   }
-  
+
   const getInitials = (name: string) => {
     if (!name) return '';
     const names = name.split(' ');
     if (names.length === 1) return names[0][0].toUpperCase();
     return `${names[0][0]}${names[names.length - 1][0]}`.toUpperCase();
+  };
+
+  const getCardClass = (cardId: string) => {
+    if (!opening) return 'opacity-100 scale-100';
+    if (opening === cardId) return 'opacity-100 scale-110 z-10';
+    return 'opacity-0 scale-90';
   };
 
   return (
@@ -103,16 +135,23 @@ export default function DashboardPage() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4">
             <Avatar className="h-10 w-10 border-2 border-white/50">
-                <AvatarImage src={userProfile?.photoURL} alt={userProfile?.username} />
-                <AvatarFallback className="bg-white/30 text-white">
+              <AvatarImage
+                src={userProfile?.photoURL}
+                alt={userProfile?.username}
+              />
+              <AvatarFallback className="bg-white/30 text-white">
                 {getInitials(userProfile?.username)}
-                </AvatarFallback>
+              </AvatarFallback>
             </Avatar>
             <h1 className="text-2xl font-bold leading-tight tracking-tight">
-                Welcome, {userProfile?.username || 'User'}!
+              Welcome, {userProfile?.username || 'User'}!
             </h1>
           </div>
-          <Button onClick={handleSignOut} variant="ghost" className="hover:bg-white/20 hover:text-white">
+          <Button
+            onClick={handleSignOut}
+            variant="ghost"
+            className="hover:bg-white/20 hover:text-white"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Logout
           </Button>
@@ -121,43 +160,56 @@ export default function DashboardPage() {
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
         <div className="mx-auto max-w-4xl">
-            <Card className="mb-8 bg-green-100 border-green-200">
-                <CardContent className="p-6 flex items-center justify-between">
-                    <div>
-                        <h2 className="text-xl font-bold text-green-800">Have a new health concern?</h2>
-                        <p className="text-green-700">Get instant guidance by checking your symptoms.</p>
-                    </div>
-                    <Button
-                        onClick={() => router.push('/symptoms')}
-                        className="bg-primary hover:bg-primary/90 text-white"
-                        size="lg"
-                    >
-                        <HeartPulse className="mr-2 h-5 w-5"/>
-                        Check New Symptom
-                    </Button>
-                </CardContent>
-            </Card>
+          <Card
+            className={cn(
+              'mb-8 cursor-pointer border-green-200 bg-green-100 transition-all duration-300 hover:shadow-lg',
+              getCardClass('symptoms')
+            )}
+            onClick={() => handleNavigation('/symptoms', 'symptoms')}
+          >
+            <CardContent className="flex items-center justify-between p-6">
+              <div>
+                <h2 className="text-xl font-bold text-green-800">
+                  Have a new health concern?
+                </h2>
+                <p className="text-green-700">
+                  Get instant guidance by checking your symptoms.
+                </p>
+              </div>
+              <Button
+                className="bg-primary text-white hover:bg-primary/90"
+                size="lg"
+                tabIndex={-1}
+              >
+                <HeartPulse className="mr-2 h-5 w-5" />
+                Check New Symptom
+              </Button>
+            </CardContent>
+          </Card>
 
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <ActionCard 
-                    icon={<User className="h-8 w-8"/>}
-                    title="My Profile"
-                    description="View and update your details"
-                    onClick={() => router.push('/profile')}
-                />
-                 <ActionCard 
-                    icon={<ClipboardList className="h-8 w-8"/>}
-                    title="Medicine Tracker"
-                    description="Manage your prescriptions"
-                    onClick={() => {}}
-                />
-                 <ActionCard 
-                    icon={<CalendarDays className="h-8 w-8"/>}
-                    title="Daily Tracker"
-                    description="Log your daily health metrics"
-                    onClick={() => {}}
-                />
-            </div>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            <ActionCard
+              icon={<User className="h-8 w-8" />}
+              title="My Profile"
+              description="View and update your details"
+              onClick={() => handleNavigation('/profile', 'profile')}
+              className={getCardClass('profile')}
+            />
+            <ActionCard
+              icon={<ClipboardList className="h-8 w-8" />}
+              title="Medicine Tracker"
+              description="Manage your prescriptions"
+              onClick={() => handleNavigation('#', 'medicine')}
+              className={getCardClass('medicine')}
+            />
+            <ActionCard
+              icon={<CalendarDays className="h-8 w-8" />}
+              title="Daily Tracker"
+              description="Log your daily health metrics"
+              onClick={() => handleNavigation('#', 'daily')}
+              className={getCardClass('daily')}
+            />
+          </div>
         </div>
       </main>
     </div>
