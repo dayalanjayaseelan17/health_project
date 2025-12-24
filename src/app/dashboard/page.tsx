@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   useDoc,
@@ -36,74 +36,61 @@ const ActionCard = ({
   description: string;
   onClick: () => void;
 }) => {
-  const controls = useAnimation();
+  const ref = useRef<HTMLButtonElement>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: -1, y: -1 });
 
-  const handleHoverStart = () => {
-    setIsHovered(true);
-    controls.stop();
-    controls.start({
-      scale: [1, 1.2, 0.9, 1],
-      transition: { duration: 0.8, ease: 'easeInOut' },
-    });
-  };
-
-  const handleHoverEnd = () => {
-    setIsHovered(false);
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setMousePosition({
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      });
+    }
   };
 
   return (
     <div
-      className="button--bubble__container aspect-square"
-      onMouseEnter={handleHoverStart}
-      onMouseLeave={handleHoverEnd}
+      className="relative aspect-square overflow-hidden rounded-xl border bg-card text-card-foreground shadow-sm transition-shadow hover:shadow-lg"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => {
+        setIsHovered(false);
+        setMousePosition({ x: -1, y: -1 });
+      }}
     >
-      <button onClick={onClick} className="button button--bubble h-full w-full">
-        <div className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
-          <div className={`transition-colors ${isHovered ? 'text-white' : 'text-primary'}`}>{icon}</div>
-          <div>
-            <h2 className={`text-base font-bold transition-colors ${isHovered ? 'text-white' : ''}`}>{title}</h2>
-            <p className={`text-xs transition-colors ${isHovered ? 'text-white/80' : 'text-muted-foreground'}`}>{description}</p>
-          </div>
+      <button
+        ref={ref}
+        onClick={onClick}
+        onMouseMove={handleMouseMove}
+        className="relative z-10 flex h-full w-full flex-col items-center justify-center gap-2 p-4 text-center"
+      >
+        <div className={`transition-colors ${isHovered ? 'text-white' : 'text-primary'}`}>{icon}</div>
+        <div>
+          <h2 className={`text-base font-bold transition-colors ${isHovered ? 'text-white' : ''}`}>{title}</h2>
+          <p className={`text-xs transition-colors ${isHovered ? 'text-white/80' : 'text-muted-foreground'}`}>{description}</p>
         </div>
       </button>
-      <span className="button--bubble__effect-container pointer-events-none">
+
+      {isHovered && (
         <motion.span
-          className="circle top-left"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
+          className="pointer-events-none absolute -z-10 block h-32 w-32 rounded-full bg-primary"
+          style={{
+            top: mousePosition.y,
+            left: mousePosition.x,
+            x: '-50%',
+            y: '-50%',
+          }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 3 }}
+          exit={{ scale: 0 }}
+          transition={{
+            type: 'spring',
+            stiffness: 260,
+            damping: 20,
+          }}
         />
-        <motion.span
-          className="circle top-left"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
-          transition={{ delay: 0.1 }}
-        />
-        <motion.span
-          className="circle top-left"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
-          transition={{ delay: 0.2 }}
-        />
-        <span className="button effect-button" />
-        <motion.span
-          className="circle bottom-right"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
-        />
-        <motion.span
-          className="circle bottom-right"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
-          transition={{ delay: 0.1 }}
-        />
-        <motion.span
-          className="circle bottom-right"
-          initial={{ scale: 0, x: 0, y: 0 }}
-          animate={controls}
-          transition={{ delay: 0.2 }}
-        />
-      </span>
+      )}
     </div>
   );
 };
