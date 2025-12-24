@@ -197,34 +197,4 @@
     right: 0;
     transform: translateX(0);
   }
-
-  .bubble-btn {
-    @apply relative w-full h-full flex items-center justify-center rounded-2xl cursor-pointer;
-    @apply text-primary font-bold text-center;
-    @apply bg-white border-2 border-primary;
-    -webkit-font-smoothing: antialiased;
-    transition: all 0.2s ease-out;
-  }
-
-  .bubble-btn:hover {
-    @apply text-white;
-  }
-  
-  .bubble-btn__effect-container {
-    @apply absolute inset-0 w-full h-full overflow-hidden rounded-2xl;
-    pointer-events: none;
-  }
-  
-  .bubble-btn__bubble {
-    @apply absolute block rounded-full;
-    width: 40px;
-    height: 40px;
-    background-color: hsl(var(--primary));
-    transform-origin: center;
-  }
-
-  .bubble-btn:hover .bubble-btn__bubble {
-     background-color: hsl(var(--primary));
-  }
-
 }

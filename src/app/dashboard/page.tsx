@@ -33,64 +33,55 @@ const ActionCard = ({
   title,
   description,
   onClick,
+  isAnimating,
 }: {
   icon: React.ReactNode;
   title: string;
   description: string;
   onClick: () => void;
+  isAnimating: boolean;
 }) => {
-  const [isHovered, setIsHovered] = useState(false);
-
-  const bubbles = Array.from({ length: 6 });
-
   return (
-    <div className="relative aspect-square flex items-center justify-center text-center transition-all duration-300">
-      <button
-        className="bubble-btn group w-full h-full"
-        onClick={onClick}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-      >
-        <div className='flex flex-col items-center gap-2 p-4 z-10 relative'>
-          <div className="rounded-full bg-primary/10 p-3 text-primary group-hover:bg-white/20 group-hover:text-white transition-colors duration-500">{icon}</div>
-          <div>
-            <h2 className="text-base font-bold">{title}</h2>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </div>
-        </div>
-        
-        <div className="bubble-btn__effect-container">
-          {bubbles.map((_, i) => (
-            <motion.span
-              key={i}
-              className="bubble-btn__bubble"
-              initial={{ x: '50%', y: '50%', scale: 0 }}
-              animate={{
-                x: isHovered ? (Math.random() - 0.5) * 200 : '50%',
-                y: isHovered ? (Math.random() - 0.5) * 200 : '50%',
-                scale: isHovered ? 1 + Math.random() * 0.5 : 0,
-                opacity: isHovered ? 1 : 0,
-              }}
-              transition={{
-                type: 'spring',
-                stiffness: 100,
-                damping: 10,
-                delay: isHovered ? Math.random() * 0.2 : 0,
-              }}
-            />
-          ))}
-        </div>
-      </button>
-    </div>
+    <motion.div
+      layout
+      className="relative aspect-square"
+      onClick={onClick}
+      initial={{ borderRadius: '1rem' }}
+      animate={{
+        scale: isAnimating ? 1.1 : 1,
+        zIndex: isAnimating ? 20 : 10,
+      }}
+      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    >
+      <Card className="h-full w-full cursor-pointer transition-shadow hover:shadow-lg">
+        <CardContent className="flex h-full flex-col items-center justify-center gap-2 p-4 text-center">
+          <motion.div
+            animate={{
+              opacity: isAnimating ? 0 : 1,
+              scale: isAnimating ? 0.8 : 1,
+            }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="rounded-full bg-primary/10 p-3 text-primary">
+              {icon}
+            </div>
+            <div>
+              <h2 className="text-base font-bold">{title}</h2>
+              <p className="text-xs text-muted-foreground">{description}</p>
+            </div>
+          </motion.div>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 };
-
 
 export default function DashboardPage() {
   const router = useRouter();
   const auth = useAuth();
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
+  const [opening, setOpening] = useState<string | null>(null);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid || user.isAnonymous) return null;
@@ -112,7 +103,13 @@ export default function DashboardPage() {
   };
 
   const handleNavigation = (path: string) => {
+    if (opening) return;
+    setOpening(path);
+    setTimeout(() => {
       router.push(path);
+      // Reset after navigation to re-enable clicks
+      setTimeout(() => setOpening(null), 500);
+    }, 400); // Wait for animation
   };
 
   if (isUserLoading || (user && !user.isAnonymous && isProfileLoading)) {
@@ -175,58 +172,84 @@ export default function DashboardPage() {
       </header>
 
       <main className="flex-1 p-4 sm:p-6 lg:p-8">
-        <div className="mx-auto max-w-4xl">
-          <Card
-            className='mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl'
-            onClick={() => handleNavigation('/symptoms')}
+        <motion.div
+          layout
+          className="mx-auto max-w-4xl"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: opening ? 0 : 1 }}
+        >
+          <motion.div
+            layout
+            initial={{ borderRadius: '1rem' }}
+            animate={{
+              scale: opening === '/symptoms' ? 1.1 : 1,
+              zIndex: opening === '/symptoms' ? 20 : 1,
+            }}
+            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
           >
-            <CardContent className="flex items-center justify-between p-6">
-              <div>
-                <h2 className="text-xl font-bold text-green-800">
-                  Have a new health concern?
-                </h2>
-                <p className="text-green-700">
-                  Get instant guidance by checking your symptoms.
-                </p>
-              </div>
-              <Button
-                className="bg-primary text-white hover:bg-primary/90"
-                size="lg"
-                tabIndex={-1}
-              >
-                <HeartPulse className="mr-2 h-5 w-5" />
-                Check New Symptom
-              </Button>
-            </CardContent>
-          </Card>
+            <Card
+              className="mb-8 cursor-pointer border-green-200 bg-green-100/80 backdrop-blur-sm transition-all duration-300 hover:shadow-lg rounded-2xl"
+              onClick={() => handleNavigation('/symptoms')}
+            >
+              <CardContent className="flex items-center justify-between p-6">
+                <motion.div
+                  animate={{
+                    opacity: opening === '/symptoms' ? 0 : 1,
+                    scale: opening === '/symptoms' ? 0.8 : 1,
+                  }}
+                  transition={{ duration: 0.2 }}
+                  className="flex-1"
+                >
+                  <h2 className="text-xl font-bold text-green-800">
+                    Have a new health concern?
+                  </h2>
+                  <p className="text-green-700">
+                    Get instant guidance by checking your symptoms.
+                  </p>
+                </motion.div>
+                <Button
+                  className="bg-primary text-white hover:bg-primary/90"
+                  size="lg"
+                  tabIndex={-1}
+                >
+                  <HeartPulse className="mr-2 h-5 w-5" />
+                  Check New Symptom
+                </Button>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4" style={{ filter: "url('#goo')"}}>
-              <ActionCard
+          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
+            <ActionCard
               icon={<User className="h-8 w-8" />}
               title="My Profile"
               description="View and update your details"
               onClick={() => handleNavigation('/profile')}
-              />
-              <ActionCard
+              isAnimating={opening === '/profile'}
+            />
+            <ActionCard
               icon={<ClipboardList className="h-8 w-8" />}
               title="Medicine Tracker"
               description="Manage your prescriptions"
               onClick={() => handleNavigation('#')}
-              />
-              <ActionCard
+              isAnimating={opening === '#'}
+            />
+            <ActionCard
               icon={<CalendarDays className="h-8 w-8" />}
               title="Daily Tracker"
               description="Log your daily health metrics"
               onClick={() => handleNavigation('#')}
-              />
-              <ActionCard
+              isAnimating={opening === '#'}
+            />
+            <ActionCard
               icon={<BarChart3 className="h-8 w-8" />}
               title="Health Bar"
               description="View your health summary"
               onClick={() => handleNavigation('#')}
-              />
+              isAnimating={opening === '#'}
+            />
           </div>
-        </div>
+        </motion.div>
       </main>
     </div>
   );
