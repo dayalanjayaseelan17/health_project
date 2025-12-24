@@ -27,6 +27,8 @@ import {
   Scale,
   Ruler,
   LogOut,
+  ClipboardList,
+  CalendarDays,
 } from 'lucide-react';
 
 const StatCard = ({
@@ -120,6 +122,19 @@ export default function DashboardPage() {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem>
+                <User className="mr-2 h-4 w-4" />
+                <span>My Profile</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <ClipboardList className="mr-2 h-4 w-4" />
+                <span>Medicine Tracker</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem>
+                <CalendarDays className="mr-2 h-4 w-4" />
+                <span>Daily Tracker</span>
+              </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleSignOut}>
                 <LogOut className="mr-2 h-4 w-4" />
