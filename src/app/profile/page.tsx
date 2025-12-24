@@ -26,6 +26,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import { cn } from '@/lib/utils';
 
 const InfoCard = ({
   icon,
@@ -57,6 +58,11 @@ export default function ProfilePage() {
   
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   const userProfileRef = useMemoFirebase(() => {
     if (!firestore || !user?.uid) return null;
@@ -127,7 +133,10 @@ export default function ProfilePage() {
           Back to Dashboard
         </Button>
 
-        <Card className="overflow-hidden shadow-lg">
+        <Card className={cn(
+            "overflow-hidden shadow-lg transition-transform duration-500 ease-out",
+            isMounted ? "translate-x-0" : "-translate-x-full"
+          )}>
           <CardHeader className="bg-gradient-to-r from-primary to-green-400 p-6 sm:p-8 text-white">
             <div className="flex items-center space-x-4">
               <div className="relative">
