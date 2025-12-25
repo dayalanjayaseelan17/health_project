@@ -45,8 +45,6 @@ const signUpSchema = z.object({
 /* ===================== SIGN IN ===================== */
 
 const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
-  console.log('✅ EMAIL LOGIN PAGE LOADED');
-
   const auth = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -57,8 +55,6 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
-    console.log('➡️ Signing in with email:', values.email);
-
     if (!auth) return;
 
     setLoading(true);
@@ -197,7 +193,7 @@ const LoginPageContent = () => {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
 
-  if (!isUserLoading && user) {
+  if (!isUserLoading && user && !user.isAnonymous) {
     router.replace('/dashboard');
     return null;
   }
