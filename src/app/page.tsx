@@ -4,7 +4,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
-import { initiateAnonymousSignIn } from '@/firebase/non-blocking-login';
+
 import { HeartPulse, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { motion, useAnimation } from 'framer-motion';
@@ -54,13 +54,7 @@ export default function Home() {
       return;
     }
     setLoading('quick');
-    try {
-      // Non-blocking call. The onAuthStateChanged listener in the provider will handle the redirect.
-      initiateAnonymousSignIn(auth);
-      toast({
-        title: 'Starting Anonymous Session',
-        description: 'Redirecting to the health checker...',
-      });
+    
       // The redirection will be handled by the auth state listener on the symptoms page
       router.push('/symptoms');
     } catch (error) {

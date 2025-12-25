@@ -1,9 +1,7 @@
-
 import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/toaster';
 import { FirebaseClientProvider } from '@/firebase';
-import Template from './template';
 
 export const metadata: Metadata = {
   title: 'Swasthya Margdarshan',
@@ -12,9 +10,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html lang="en" className="h-full">
       <head>
@@ -29,9 +27,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
+
       <body className="font-body antialiased h-full">
         <FirebaseClientProvider>
-          <Template>{children}</Template>
+          {children}
           <Toaster />
         </FirebaseClientProvider>
       </body>

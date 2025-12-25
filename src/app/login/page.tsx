@@ -79,42 +79,47 @@ const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <h1 className="text-3xl font-bold">Sign In</h1>
+    <div className="form-container sign-in-container">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex h-full flex-col justify-center space-y-4 px-12"
+        >
+          <h1 className="text-3xl font-bold">Sign In</h1>
 
-        <FormField
-          control={form.control}
-          name="email"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input type="email" placeholder="Email" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="email" placeholder="Email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="password"
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input type="password" placeholder="Password" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="password" placeholder="Password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <Button type="submit" disabled={loading}>
-          {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-          Sign In
-        </Button>
-      </form>
-    </Form>
+          <Button disabled={loading}>
+            {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+            Sign In
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
 
@@ -167,23 +172,28 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
-        <h1 className="text-3xl font-bold">Create Account</h1>
+    <div className="form-container sign-up-container">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex h-full flex-col justify-center space-y-2 px-12"
+        >
+          <h1 className="text-3xl font-bold">Create Account</h1>
 
-        <Input placeholder="Username" {...form.register('username')} />
-        <Input placeholder="Email" {...form.register('email')} />
-        <Input type="password" placeholder="Password" {...form.register('password')} />
-        <Input type="number" placeholder="Age" {...form.register('age')} />
-        <Input type="number" placeholder="Height (cm)" {...form.register('height')} />
-        <Input type="number" placeholder="Weight (kg)" {...form.register('weight')} />
+          <Input placeholder="Username" {...form.register('username')} />
+          <Input placeholder="Email" {...form.register('email')} />
+          <Input type="password" placeholder="Password" {...form.register('password')} />
+          <Input type="number" placeholder="Age" {...form.register('age')} />
+          <Input type="number" placeholder="Height (cm)" {...form.register('height')} />
+          <Input type="number" placeholder="Weight (kg)" {...form.register('weight')} />
 
-        <Button type="submit" disabled={loading}>
-          {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-          Sign Up
-        </Button>
-      </form>
-    </Form>
+          <Button disabled={loading}>
+            {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+            Sign Up
+          </Button>
+        </form>
+      </Form>
+    </div>
   );
 };
 
@@ -192,6 +202,7 @@ const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
 const LoginPageContent = () => {
   const router = useRouter();
   const { user, isUserLoading } = useUser();
+  const [rightPanelActive, setRightPanelActive] = useState(false);
 
   if (!isUserLoading && user && !user.isAnonymous) {
     router.replace('/dashboard');
@@ -199,16 +210,60 @@ const LoginPageContent = () => {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center gap-10">
-      <SignUpForm onSuccess={() => router.replace('/dashboard')} />
-      <SignInForm onSuccess={() => router.replace('/dashboard')} />
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
+      <div
+        className={`container-main ${
+          rightPanelActive ? 'right-panel-active' : ''
+        }`}
+      >
+        <SignUpForm onSuccess={() => router.replace('/dashboard')} />
+        <SignInForm onSuccess={() => router.replace('/dashboard')} />
+
+        <div className="overlay-container">
+          <div className="overlay">
+            <div className="overlay-panel overlay-left">
+              <h1 className="text-4xl font-bold">Welcome Back!</h1>
+              <p className="mt-4 text-center">
+                Your health is your greatest wealth.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
+                onClick={() => setRightPanelActive(false)}
+              >
+                Sign In
+              </Button>
+            </div>
+
+            <div className="overlay-panel overlay-right">
+              <h1 className="text-4xl font-bold">New to our Community?</h1>
+              <p className="mt-4 text-center">
+                Join us today for personalized health insights.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
+                onClick={() => setRightPanelActive(true)}
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<LoaderCircle className="h-10 w-10 animate-spin" />}>
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <LoaderCircle className="h-12 w-12 animate-spin" />
+        </div>
+      }
+    >
       <LoginPageContent />
     </Suspense>
   );
