@@ -1,287 +1,275 @@
+'use client';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+import { useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 
-@layer base {
-  :root {
-    --background: 120 60% 97%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 108 55% 82%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 142.1 76.2% 36.3%;
-    --radius: 0.5rem;
-  }
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@/components/ui/form';
+import { useToast } from '@/hooks/use-toast';
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 142.1 76.2% 36.3%;
-    --primary-foreground: 355.7 100% 97.3%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 142.1 76.2% 36.3%;
-  }
-}
+import { LoaderCircle } from 'lucide-react';
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
+import { useAuth, useFirestore, useUser } from '@/firebase';
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+} from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 
-@layer components {
-  /* This is the main container that holds everything */
-  .container-main {
-    position: relative;
-    overflow: hidden;
-    border-radius: 1rem;
-    box-shadow: 0 14px 28px rgba(0,0,0,0.25), 
-                0 10px 10px rgba(0,0,0,0.22);
-    width: 100%;
-    max-width: 768px;
-    min-height: 520px;
-  }
-  
-  /* This class is added to the container to trigger the slide animation */
-  .container-main.right-panel-active .sign-in-container {
-    transform: translateX(100%);
-  }
-  
-  .container-main.right-panel-active .sign-up-container {
-    transform: translateX(100%);
-    opacity: 1;
-    z-index: 5;
-    animation: show 0.6s;
-  }
-  
-  .container-main.right-panel-active .overlay-container {
-    transform: translateX(-100%);
-  }
-  
-  .container-main.right-panel-active .overlay {
-    transform: translateX(50%);
-  }
-  
-  .container-main.right-panel-active .overlay-left {
-    transform: translateX(0);
-  }
-  
-  .container-main.right-panel-active .overlay-right {
-    transform: translateX(20%);
-  }
+/* ===================== SCHEMAS ===================== */
 
-  /* Keyframe for showing the sign-up panel */
-  @keyframes show {
-    0%, 49.99% {
-      opacity: 0;
-      z-index: 1;
+const signInSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+});
+
+const signUpSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  age: z.coerce.number().min(1).max(120),
+  height: z.coerce.number().min(50),
+  weight: z.coerce.number().min(10),
+});
+
+/* ===================== SIGN IN ===================== */
+
+const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
+  const auth = useAuth();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof signInSchema>>({
+    resolver: zodResolver(signInSchema),
+    defaultValues: { email: '', password: '' },
+  });
+
+  const onSubmit = async (values: z.infer<typeof signInSchema>) => {
+    if (!auth) return;
+
+    setLoading(true);
+    try {
+      await signInWithEmailAndPassword(auth, values.email, values.password);
+      toast({ title: 'Login successful' });
+      onSuccess();
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description:
+          e.code === 'auth/wrong-password'
+            ? 'Incorrect password'
+            : e.code === 'auth/user-not-found'
+            ? 'No account found with this email'
+            : 'Login failed',
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    50%, 100% {
-      opacity: 1;
-      z-index: 5;
+  };
+
+  return (
+    <div className="form-container sign-in-container">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex h-full flex-col justify-center space-y-4 px-12"
+        >
+          <h1 className="text-3xl font-bold">Sign In</h1>
+
+          <FormField
+            control={form.control}
+            name="email"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="email" placeholder="Email" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="password"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input type="password" placeholder="Password" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <Button disabled={loading}>
+            {loading && (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Sign In
+          </Button>
+        </form>
+      </Form>
+    </div>
+  );
+};
+
+/* ===================== SIGN UP ===================== */
+
+const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
+  const auth = useAuth();
+  const firestore = useFirestore();
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+
+  const form = useForm<z.infer<typeof signUpSchema>>({
+    resolver: zodResolver(signUpSchema),
+  });
+
+  const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
+    if (!auth || !firestore) return;
+
+    setLoading(true);
+    try {
+      const cred = await createUserWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
+      );
+
+      await setDoc(doc(firestore, `users/${cred.user.uid}`), {
+        id: cred.user.uid,
+        username: values.username,
+        email: values.email,
+        age: values.age,
+        height: values.height,
+        weight: values.weight,
+      });
+
+      toast({ title: 'Account created successfully' });
+      onSuccess();
+    } catch (e: any) {
+      toast({
+        variant: 'destructive',
+        title: 'Sign Up Failed',
+        description:
+          e.code === 'auth/email-already-in-use'
+            ? 'Email already registered'
+            : 'Signup failed',
+      });
+    } finally {
+      setLoading(false);
     }
+  };
+
+  return (
+    <div className="form-container sign-up-container">
+      <Form {...form}>
+        <form
+          onSubmit={form.handleSubmit(onSubmit)}
+          className="flex h-full flex-col justify-center space-y-2 px-12"
+        >
+          <h1 className="text-3xl font-bold">Create Account</h1>
+
+          <Input placeholder="Username" {...form.register('username')} />
+          <Input placeholder="Email" {...form.register('email')} />
+          <Input type="password" placeholder="Password" {...form.register('password')} />
+          <Input type="number" placeholder="Age" {...form.register('age')} />
+          <Input type="number" placeholder="Height (cm)" {...form.register('height')} />
+          <Input type="number" placeholder="Weight (kg)" {...form.register('weight')} />
+
+          <Button disabled={loading}>
+            {loading && (
+              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Sign Up
+          </Button>
+        </form>
+      </Form>
+    </div>
+  );
+};
+
+/* ===================== PAGE ===================== */
+
+const LoginPageContent = () => {
+  const router = useRouter();
+  const { user, isUserLoading } = useUser();
+  const [rightPanelActive, setRightPanelActive] = useState(false);
+
+  if (!isUserLoading && user && !user.isAnonymous) {
+    router.replace('/dashboard');
+    return null;
   }
 
-  /* Base styles for the form containers (sign-in, sign-up) */
-  .form-container {
-    position: absolute;
-    top: 0;
-    height: 100%;
-    transition: all 0.6s ease-in-out;
-    background-color: #fff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
+      <div
+        className={`container-main ${
+          rightPanelActive ? 'right-panel-active' : ''
+        }`}
+      >
+        <SignUpForm onSuccess={() => router.replace('/dashboard')} />
+        <SignInForm onSuccess={() => router.replace('/dashboard')} />
 
-  .sign-in-container {
-    left: 0;
-    width: 50%;
-    z-index: 2; /* Sign-in is on top by default */
-  }
+        <div className="overlay-container">
+          <div className="overlay">
+            <div className="overlay-panel overlay-left">
+              <h1 className="text-4xl font-bold">Welcome Back!</h1>
+              <p className="mt-4 text-center">
+                Your health is your greatest wealth. Sign in to continue your
+                journey.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
+                onClick={() => setRightPanelActive(false)}
+              >
+                Sign In
+              </Button>
+            </div>
 
-  .sign-up-container {
-    left: 0;
-    width: 50%;
-    opacity: 0; /* Sign-up is hidden by default */
-    z-index: 1;
-  }
-  
-  /* The overlay container that slides */
-  .overlay-container {
-    position: absolute;
-    top: 0;
-    left: 50%;
-    width: 50%;
-    height: 100%;
-    overflow: hidden;
-    transition: transform 0.6s ease-in-out;
-    z-index: 100;
-  }
+            <div className="overlay-panel overlay-right">
+              <h1 className="text-4xl font-bold">New to our Community?</h1>
+              <p className="mt-4 text-center">
+                Join us today and take the first step towards a healthier you.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
+                onClick={() => setRightPanelActive(true)}
+              >
+                Sign Up
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
-  /* The gradient background of the overlay */
-  .overlay {
-    background: #A7D9A5;
-    background: linear-gradient(to right, hsl(var(--primary)), #86C475);
-    background-repeat: no-repeat;
-    background-size: cover;
-    background-position: 0 0;
-    color: #FFFFFF;
-    position: relative;
-    left: -100%;
-    height: 100%;
-    width: 200%;
-    transform: translateX(0);
-    transition: transform 0.6s ease-in-out;
-  }
-
-  /* The panels with text and buttons inside the overlay */
-  .overlay-panel {
-    position: absolute;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    padding: 0 40px;
-    text-align: center;
-    top: 0;
-    height: 100%;
-    width: 50%;
-    transform: translateX(0);
-    transition: transform 0.6s ease-in-out;
-  }
-
-  .overlay-left {
-    transform: translateX(-20%);
-  }
-
-  .overlay-right {
-    right: 0;
-    transform: translateX(0);
-  }
-
-.button--bubble__container {
-  position: relative;
-  display: inline-block;
-}
-
-.button--bubble {
-  -webkit-font-smoothing: antialiased;
-  background-color: transparent;
-  border: none;
-  color: #fff;
-  display: inline-block;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 14px;
-  font-weight: 100;
-  text-decoration: none;
-  user-select: none;
-  letter-spacing: 1px;
-  padding: 20px 40px;
-  text-transform: uppercase;
-  transition: all 0.1s ease-out;
-  position: relative;
-  z-index: 2;
-}
-
-.button--bubble:hover {
-  background: none;
-}
-
-.button--bubble:hover + .button--bubble__effect-container .circle {
-  background: hsl(var(--primary));
-}
-.button--bubble:hover + .button--bubble__effect-container .button {
-  background: hsl(var(--primary));
-}
-.button--bubble:active + .button--bubble__effect-container {
-  transform: scale(0.95);
-}
-
-.effect-button {
-  position: absolute;
-  width: 50%;
-  height: 25%;
-  top: 50%;
-  left: 25%;
-  z-index: 1;
-  transform: translateY(-50%);
-  background: #222;
-  transition: background 0.1s ease-out;
-}
-
-.button--bubble__effect-container {
-  position: absolute;
-  display: block;
-  width: 200%;
-  height: 400%;
-  top: -150%;
-  left: -50%;
-  -webkit-filter: url("#goo");
-  filter: url("#goo");
-  transition: all 0.1s ease-out;
-  pointer-events: none;
-}
-.button--bubble__effect-container .circle {
-  position: absolute;
-  width: 25px;
-  height: 25px;
-  border-radius: 15px;
-  background: #222;
-  transition: background 0.1s ease-out;
-}
-.button--bubble__effect-container .circle.top-left {
-  top: 40%;
-  left: 27%;
-}
-.button--bubble__effect-container .circle.bottom-right {
-  bottom: 40%;
-  right: 27%;
-}
-
-@keyframes hue-rotate {
-  from {
-    -webkit-filter: hue-rotate(0);
-    -moz-filter: hue-rotate(0);
-    -ms-filter: hue-rotate(0);
-    filter: hue-rotate(0);
-  }
-  to {
-    -webkit-filter: hue-rotate(360deg);
-    -moz-filter: hue-rotate(360deg);
-    -ms-filter: hue-rotate(360deg);
-    filter: hue-rotate(360deg);
-  }
-}
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-screen items-center justify-center">
+          <LoaderCircle className="h-12 w-12 animate-spin" />
+        </div>
+      }
+    >
+      <LoginPageContent />
+    </Suspense>
+  );
 }
