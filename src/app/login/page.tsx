@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
@@ -6,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -16,6 +16,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
+
 import {
   User,
   Calendar,
@@ -25,12 +26,15 @@ import {
   Lock,
   LoaderCircle,
 } from 'lucide-react';
+
 import { useAuth, useFirestore, useUser } from '@/firebase';
 import { setDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
+
 import {
   doc,
   collection,
@@ -43,21 +47,17 @@ import {
 /* ---------------- SCHEMAS ---------------- */
 
 const signUpSchema = z.object({
-  username: z
-    .string()
-    .min(3, { message: 'Username must be at least 3 characters.' }),
-  email: z.string().email({ message: 'Please enter a valid email.' }),
-  password: z
-    .string()
-    .min(6, { message: 'Password must be at least 6 characters.' }),
+  username: z.string().min(3),
+  email: z.string().email(),
+  password: z.string().min(6),
   age: z.coerce.number().min(1).max(120),
-  height: z.coerce.number().min(50, { message: 'Height in cm' }),
-  weight: z.coerce.number().min(10, { message: 'Weight in kg' }),
+  height: z.coerce.number().min(50),
+  weight: z.coerce.number().min(10),
 });
 
 const signInSchema = z.object({
-  username: z.string().min(1, { message: 'Username is required.' }),
-  password: z.string().min(1, { message: 'Password is required.' }),
+  username: z.string().min(1),
+  password: z.string().min(1),
 });
 
 /* ---------------- SIGN IN ---------------- */
@@ -78,43 +78,45 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description: 'Firebase service is not available. Please try again later.',
+        description: 'Firebase not initialized.',
       });
       return;
     }
-    setLoading(true);
-    try {
-      // 1. Find user by username to get their email
-      const usersRef = collection(firestore, 'users');
-      const q = query(
-        usersRef,
-        where('username', '==', values.username),
-        limit(1)
-      );
-      const querySnapshot = await getDocs(q);
 
-      if (querySnapshot.empty) {
-        throw new Error('Username not found');
+    setLoading(true);
+
+    try {
+      // 🔍 Get email using username
+      const usersRef = collection(firestore, 'users');
+      const q = query(usersRef, where('username', '==', values.username), limit(1));
+      const snap = await getDocs(q);
+
+      if (snap.empty) {
+        throw new Error('USERNAME_NOT_FOUND');
       }
 
-      const userDoc = querySnapshot.docs[0];
-      const userEmail = userDoc.data().email;
+      const email = snap.docs[0].data().email;
 
-      // 2. Sign in with the retrieved email and provided password
-      await signInWithEmailAndPassword(auth, userEmail, values.password);
+      await signInWithEmailAndPassword(auth, email, values.password);
 
       toast({ title: 'Login successful' });
       onAuthSuccess();
+
     } catch (e: any) {
-      let description = 'An unexpected error occurred. Please try again.';
-      if (e.message === 'Username not found') {
-        description = 'No account found with this username.';
+      console.error('🔥 SIGN IN ERROR:', e);
+
+      let description = 'Something went wrong. Please try again.';
+
+      if (e.message === 'USERNAME_NOT_FOUND') {
+        description = 'Username does not exist.';
       } else if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
-        description = 'Incorrect password. Please try again.';
-      } else if (e.code === 'auth/user-not-found') {
-        description =
-          "No account found associated with this username's email.";
+        description = 'Incorrect password.';
+      } else if (e.code === 'auth/unauthorized-domain') {
+        description = 'This domain is not authorized in Firebase.';
+      } else if (e.code === 'permission-denied') {
+        description = 'Firestore permission denied.';
       }
+
       toast({
         variant: 'destructive',
         title: 'Login Failed',
@@ -128,10 +130,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <div className="form-container sign-in-container">
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex h-full flex-col justify-center space-y-4 px-12"
-        >
+        <form onSubmit={form.handleSubmit(onSubmit)} className="flex h-full flex-col justify-center space-y-4 px-12">
           <h1 className="text-3xl font-bold">Sign In</h1>
 
           <FormField
@@ -140,10 +139,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <Input placeholder="Username" {...field} className="pl-10" />
-                  </div>
+                  <Input placeholder="Username" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -156,27 +152,15 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
             render={({ field }) => (
               <FormItem>
                 <FormControl>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      {...field}
-                      className="pl-10"
-                    />
-                  </div>
+                  <Input type="password" placeholder="Password" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
             )}
           />
-          <a href="#" className="text-sm text-gray-500 hover:underline">
-            Forgot your password?
-          </a>
-          <Button className="mt-4" disabled={loading}>
-            {loading && (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            )}
+
+          <Button disabled={loading}>
+            {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             Sign In
           </Button>
         </form>
@@ -195,69 +179,56 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
 
   const form = useForm<z.infer<typeof signUpSchema>>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: {
-      username: '',
-      email: '',
-      password: '',
-    },
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
-    if (!auth || !firestore) {
-       toast({
-        variant: 'destructive',
-        title: 'Sign Up Failed',
-        description: 'Firebase service is not available. Please try again later.',
-      });
-      return;
-    }
+    if (!auth || !firestore) return;
+
     setLoading(true);
 
     try {
-      // 1. Check if username is unique
-      const usersRef = collection(firestore, 'users');
       const q = query(
-        usersRef,
+        collection(firestore, 'users'),
         where('username', '==', values.username),
         limit(1)
       );
-      const usernameSnap = await getDocs(q);
-      if (!usernameSnap.empty) {
-        throw new Error('Username already taken, please choose another');
-      }
 
-      // 2. Create user with email and password
+      const snap = await getDocs(q);
+      if (!snap.empty) throw new Error('USERNAME_TAKEN');
+
       const cred = await createUserWithEmailAndPassword(
         auth,
         values.email,
         values.password
       );
 
-      // 3. Save user profile data to Firestore
-      const userProfile = {
-        id: cred.user.uid,
-        username: values.username,
-        email: values.email, // Ensure email is saved
-        age: values.age,
-        height: values.height,
-        weight: values.weight,
-        photoURL: null,
-      };
+      await setDocumentNonBlocking(
+        doc(firestore, `users/${cred.user.uid}`),
+        {
+          id: cred.user.uid,
+          username: values.username,
+          email: values.email,
+          age: values.age,
+          height: values.height,
+          weight: values.weight,
+        },
+        { merge: true }
+      );
 
-      // This is a non-blocking write. It's fast, and the UI will update optimistically.
-      setDocumentNonBlocking(doc(firestore, `users/${cred.user.uid}`), userProfile, {
-        merge: true,
-      });
-
-      toast({ title: 'Account created successfully!' });
+      toast({ title: 'Account created successfully' });
       onAuthSuccess();
+
     } catch (e: any) {
-      let description = 'An unexpected error occurred.';
-      if (e.message === 'Username already taken, please choose another') {
-        description = e.message;
+      console.error('🔥 SIGN UP ERROR:', e);
+
+      let description = 'Could not create account.';
+
+      if (e.message === 'USERNAME_TAKEN') {
+        description = 'Username already exists.';
       } else if (e.code === 'auth/email-already-in-use') {
-        description = 'This email is already registered. Please sign in.';
+        description = 'Email already registered.';
       }
+
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
@@ -271,134 +242,18 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <div className="form-container sign-up-container">
       <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex h-full flex-col justify-center space-y-2 px-12"
-        >
-          <h1 className="mb-2 text-3xl font-bold">Create Account</h1>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3 px-12">
+          <h1 className="text-3xl font-bold">Create Account</h1>
 
-          <FormField
-            control={form.control}
-            name="username"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <User className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <Input placeholder="Username" {...field} className="pl-10" />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <Input placeholder="Username" {...form.register('username')} />
+          <Input placeholder="Email" {...form.register('email')} />
+          <Input type="password" placeholder="Password" {...form.register('password')} />
+          <Input type="number" placeholder="Age" {...form.register('age')} />
+          <Input type="number" placeholder="Height (cm)" {...form.register('height')} />
+          <Input type="number" placeholder="Weight (kg)" {...form.register('weight')} />
 
-          <FormField
-            control={form.control}
-            name="email"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <Input placeholder="Email" {...field} className="pl-10" />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="password"
-            render={({ field }) => (
-              <FormItem>
-                <FormControl>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      type="password"
-                      placeholder="Password"
-                      {...field}
-                      className="pl-10"
-                    />
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid grid-cols-1 gap-2">
-            <FormField
-              control={form.control}
-              name="age"
-              render={({ field }) => (
-                <FormItem>
-                  <FormControl>
-                    <div className="relative">
-                      <Calendar className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                      <Input
-                        type="number"
-                        placeholder="Age"
-                        {...field}
-                        className="pl-10"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="grid grid-cols-2 gap-2">
-              <FormField
-                control={form.control}
-                name="height"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="relative">
-                        <Ruler className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                        <Input
-                          type="number"
-                          placeholder="Height (cm)"
-                          {...field}
-                          className="pl-10"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormControl>
-                      <div className="relative">
-                        <Weight className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-                        <Input
-                          type="number"
-                          placeholder="Weight (kg)"
-                          {...field}
-                          className="pl-10"
-                        />
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          </div>
-
-          <Button className="mt-4" disabled={loading}>
-            {loading && (
-              <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-            )}
+          <Button disabled={loading}>
+            {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
             Sign Up
           </Button>
         </form>
@@ -407,96 +262,28 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   );
 };
 
-/* ---------------- PAGE LOGIC ---------------- */
+/* ---------------- PAGE ---------------- */
 
 const LoginPageContent = () => {
-  const [rightPanel, setRightPanel] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { user, isUserLoading } = useUser();
 
-  useEffect(() => {
-    const action = searchParams.get('action');
-    if (action === 'signup') {
-      setRightPanel(true);
-    }
-  }, [searchParams]);
-
-  // If user is logged in (and not anonymous), redirect to dashboard
-  useEffect(() => {
-    if (!isUserLoading && user && !user.isAnonymous) {
-      router.replace('/dashboard');
-    }
-  }, [user, isUserLoading, router]);
-
-  const handleAuthSuccess = () => {
+  if (!isUserLoading && user) {
     router.replace('/dashboard');
-  };
-
-  if (isUserLoading || (user && !user.isAnonymous)) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-green-50">
-        <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
+    return null;
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-green-50 to-teal-100 p-4">
-      <div
-        className={`container-main ${rightPanel ? 'right-panel-active' : ''}`}
-      >
-        <SignUpForm onAuthSuccess={handleAuthSuccess} />
-        <SignInForm onAuthSuccess={handleAuthSuccess} />
-
-        <div className="overlay-container">
-          <div className="overlay">
-            <div className="overlay-panel overlay-left">
-              <h1 className="text-4xl font-bold">Welcome Back!</h1>
-              <p className="mt-4 text-center">
-                Your health is your greatest wealth. Sign in to continue your
-                wellness journey with us.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
-                onClick={() => setRightPanel(false)}
-              >
-                Sign In
-              </Button>
-            </div>
-            <div className="overlay-panel overlay-right">
-              <h1 className="text-4xl font-bold">New to our Community?</h1>
-              <p className="mt-4 text-center">
-                Join us today! Create an account to get personalized health
-                insights and take the first step towards a healthier you.
-              </p>
-              <Button
-                variant="outline"
-                className="mt-6 border-white bg-transparent text-white hover:bg-white/20"
-                onClick={() => setRightPanel(true)}
-              >
-                Sign Up
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="flex min-h-screen items-center justify-center">
+      <SignUpForm onAuthSuccess={() => router.replace('/dashboard')} />
+      <SignInForm onAuthSuccess={() => router.replace('/dashboard')} />
     </div>
   );
 };
 
-/* ---------------- PAGE WRAPPER ---------------- */
-// This helps with Next.js Suspense for useSearchParams
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center bg-green-50">
-          <LoaderCircle className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      }
-    >
+    <Suspense fallback={<LoaderCircle className="h-10 w-10 animate-spin" />}>
       <LoginPageContent />
     </Suspense>
   );
