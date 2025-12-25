@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState } from 'react';
@@ -7,7 +6,6 @@ import { useAuth } from '@/firebase';
 
 import { HeartPulse, User } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { motion, useAnimation } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 const FeatureCard = ({
@@ -43,7 +41,7 @@ export default function Home() {
   const router = useRouter();
   const { toast } = useToast();
 
-  const handleQuickCheck = async () => {
+  const handleQuickCheck = () => {
     if (!auth) {
       toast({
         variant: 'destructive',
@@ -53,19 +51,9 @@ export default function Home() {
       });
       return;
     }
+
     setLoading('quick');
-    
-      // The redirection will be handled by the auth state listener on the symptoms page
-      router.push('/symptoms');
-    } catch (error) {
-      console.error('Anonymous sign-in failed', error);
-      toast({
-        variant: 'destructive',
-        title: 'Anonymous Sign-In Failed',
-        description: 'Could not start a quick check session. Please try again.',
-      });
-      setLoading(null);
-    }
+    router.push('/symptoms'); // ✅ simple redirect
   };
 
   const handleLogin = () => {
