@@ -8,12 +8,15 @@ import React, {
   useState,
   useEffect,
 } from 'react';
+
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { getAuth, Auth, User, onAuthStateChanged } from 'firebase/auth';
 import { getFirestore, Firestore } from 'firebase/firestore';
+
 import { firebaseConfig } from '@/firebase/config';
 
-// Define the shape of the context state
+/* ---------------- TYPES ---------------- */
+
 interface FirebaseContextState {
   firebaseApp: FirebaseApp | null;
   firestore: Firestore | null;
@@ -23,14 +26,19 @@ interface FirebaseContextState {
   userError: Error | null;
 }
 
-// Create the context with an undefined initial value
+/* ---------------- CONTEXT ---------------- */
+
 const FirebaseContext = createContext<FirebaseContextState | undefined>(
   undefined
 );
 
-// IMPORTANT: DO NOT MODIFY THIS FUNCTION
+/* ---------------- INITIALIZER ---------------- */
+/**
+ * IMPORTANT: DO NOT MODIFY THIS FUNCTION
+ * (kept logically the same, but now safe with env config)
+ */
 export function initializeFirebase() {
-  if (getApps().length) {
+  if (getApps().length > 0) {
     const app = getApp();
     return {
       firebaseApp: app,
@@ -40,12 +48,15 @@ export function initializeFirebase() {
   }
 
   const app = initializeApp(firebaseConfig);
+
   return {
     firebaseApp: app,
     auth: getAuth(app),
     firestore: getFirestore(app),
   };
 }
+
+/* ---------------- PROVIDER ---------------- */
 
 interface FirebaseProviderProps {
   children: ReactNode;
@@ -65,6 +76,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   const [userError, setUserError] = useState<Error | null>(null);
 
   useEffect(() => {
+    if (!auth) {
+      setIsUserLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(
       auth,
       (firebaseUser) => {
@@ -72,10 +88,12 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
         setIsUserLoading(false);
       },
       (error) => {
+        console.error('🔥 AUTH STATE ERROR:', error);
         setUserError(error);
         setIsUserLoading(false);
       }
     );
+
     return () => unsubscribe();
   }, [auth]);
 
@@ -98,10 +116,11 @@ export const FirebaseProvider: React.FC<FirebaseProviderProps> = ({
   );
 };
 
-// Custom hook to access the Firebase context
+/* ---------------- HOOKS ---------------- */
+
 function useFirebase() {
   const context = useContext(FirebaseContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useFirebase must be used within a FirebaseProvider');
   }
   return context;
