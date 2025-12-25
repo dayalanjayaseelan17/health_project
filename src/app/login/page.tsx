@@ -20,15 +20,18 @@ import { useToast } from '@/hooks/use-toast';
 import { LoaderCircle } from 'lucide-react';
 
 import { useAuth, useFirestore, useUser } from '@/firebase';
-
 import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
-
 import { doc, setDoc } from 'firebase/firestore';
 
-/* ---------------- SCHEMAS ---------------- */
+/* ===================== SCHEMAS ===================== */
+
+const signInSchema = z.object({
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
+});
 
 const signUpSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters'),
@@ -39,15 +42,10 @@ const signUpSchema = z.object({
   weight: z.coerce.number().min(10),
 });
 
-const signInSchema = z.object({
-  email: z.string().email('Enter a valid email'),
-  password: z.string().min(1, 'Password is required'),
-});
+/* ===================== SIGN IN ===================== */
 
-/* ---------------- SIGN IN (EMAIL BASED) ---------------- */
-
-const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
-  console.log('🟢 SignInForm rendered');
+const SignInForm = ({ onSuccess }: { onSuccess: () => void }) => {
+  console.log('✅ EMAIL LOGIN PAGE LOADED');
 
   const auth = useAuth();
   const { toast } = useToast();
@@ -59,46 +57,25 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
-    console.log('🟢 SignIn onSubmit', values.email);
+    console.log('➡️ Signing in with email:', values.email);
 
-    if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Login Failed',
-        description: 'Authentication service not ready.',
-      });
-      return;
-    }
+    if (!auth) return;
 
     setLoading(true);
-
     try {
-      await signInWithEmailAndPassword(
-        auth,
-        values.email,
-        values.password
-      );
-
+      await signInWithEmailAndPassword(auth, values.email, values.password);
       toast({ title: 'Login successful' });
-      onAuthSuccess();
-
+      onSuccess();
     } catch (e: any) {
-      console.error('🔥 LOGIN ERROR:', e);
-
-      let description = 'Login failed. Please try again.';
-
-      if (e.code === 'auth/user-not-found') {
-        description = 'No account found with this email.';
-      } else if (e.code === 'auth/wrong-password') {
-        description = 'Incorrect password.';
-      } else if (e.code === 'auth/invalid-credential') {
-        description = 'Invalid email or password.';
-      }
-
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description,
+        description:
+          e.code === 'auth/wrong-password'
+            ? 'Incorrect password'
+            : e.code === 'auth/user-not-found'
+            ? 'No account found with this email'
+            : 'Login failed',
       });
     } finally {
       setLoading(false);
@@ -116,7 +93,7 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Input placeholder="Email" {...field} />
+                <Input type="email" placeholder="Email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -145,11 +122,9 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   );
 };
 
-/* ---------------- SIGN UP ---------------- */
+/* ===================== SIGN UP ===================== */
 
-const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
-  console.log('🟢 SignUpForm rendered');
-
+const SignUpForm = ({ onSuccess }: { onSuccess: () => void }) => {
   const auth = useAuth();
   const firestore = useFirestore();
   const { toast } = useToast();
@@ -160,15 +135,9 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
-    console.log('🟢 SignUp onSubmit', values.email);
-
-    if (!auth || !firestore) {
-      console.error('❌ Firebase not ready');
-      return;
-    }
+    if (!auth || !firestore) return;
 
     setLoading(true);
-
     try {
       const cred = await createUserWithEmailAndPassword(
         auth,
@@ -176,35 +145,25 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         values.password
       );
 
-      await setDoc(
-        doc(firestore, `users/${cred.user.uid}`),
-        {
-          id: cred.user.uid,
-          username: values.username,
-          email: values.email,
-          age: values.age,
-          height: values.height,
-          weight: values.weight,
-        },
-        { merge: true }
-      );
+      await setDoc(doc(firestore, `users/${cred.user.uid}`), {
+        id: cred.user.uid,
+        username: values.username,
+        email: values.email,
+        age: values.age,
+        height: values.height,
+        weight: values.weight,
+      });
 
       toast({ title: 'Account created successfully' });
-      onAuthSuccess();
-
+      onSuccess();
     } catch (e: any) {
-      console.error('🔥 SIGN UP ERROR:', e);
-
-      let description = 'Signup failed. Please try again.';
-
-      if (e.code === 'auth/email-already-in-use') {
-        description = 'Email already registered.';
-      }
-
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description,
+        description:
+          e.code === 'auth/email-already-in-use'
+            ? 'Email already registered'
+            : 'Signup failed',
       });
     } finally {
       setLoading(false);
@@ -232,7 +191,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   );
 };
 
-/* ---------------- PAGE ---------------- */
+/* ===================== PAGE ===================== */
 
 const LoginPageContent = () => {
   const router = useRouter();
@@ -245,8 +204,8 @@ const LoginPageContent = () => {
 
   return (
     <div className="flex min-h-screen items-center justify-center gap-10">
-      <SignUpForm onAuthSuccess={() => router.replace('/dashboard')} />
-      <SignInForm onAuthSuccess={() => router.replace('/dashboard')} />
+      <SignUpForm onSuccess={() => router.replace('/dashboard')} />
+      <SignInForm onSuccess={() => router.replace('/dashboard')} />
     </div>
   );
 };
