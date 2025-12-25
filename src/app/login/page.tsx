@@ -26,86 +26,79 @@ import {
   createUserWithEmailAndPassword,
 } from 'firebase/auth';
 
-import {
-  doc,
-  collection,
-  query,
-  where,
-  getDocs,
-  limit,
-  setDoc,
-} from 'firebase/firestore';
+import { doc, setDoc } from 'firebase/firestore';
 
 /* ---------------- SCHEMAS ---------------- */
 
 const signUpSchema = z.object({
-  username: z.string().min(3),
-  email: z.string().email(),
-  password: z.string().min(6),
+  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
   age: z.coerce.number().min(1).max(120),
   height: z.coerce.number().min(50),
   weight: z.coerce.number().min(10),
 });
 
 const signInSchema = z.object({
-  username: z.string().min(1),
-  password: z.string().min(1),
+  email: z.string().email('Enter a valid email'),
+  password: z.string().min(1, 'Password is required'),
 });
 
-/* ---------------- SIGN IN ---------------- */
+/* ---------------- SIGN IN (EMAIL BASED) ---------------- */
 
 const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   console.log('🟢 SignInForm rendered');
 
   const auth = useAuth();
-  const firestore = useFirestore();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { email: '', password: '' },
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
-    console.log('🟢 SignIn onSubmit called', values);
+    console.log('🟢 SignIn onSubmit', values.email);
 
-    if (!auth || !firestore) {
-      console.error('❌ Firebase not ready');
+    if (!auth) {
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: 'Authentication service not ready.',
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      const q = query(
-        collection(firestore, 'users'),
-        where('username', '==', values.username),
-        limit(1)
+      await signInWithEmailAndPassword(
+        auth,
+        values.email,
+        values.password
       );
-
-      const snap = await getDocs(q);
-
-      if (snap.empty) throw new Error('USERNAME_NOT_FOUND');
-
-      const email = snap.docs[0].data().email;
-
-      await signInWithEmailAndPassword(auth, email, values.password);
 
       toast({ title: 'Login successful' });
       onAuthSuccess();
+
     } catch (e: any) {
-      console.error('🔥 SIGN IN ERROR:', e);
+      console.error('🔥 LOGIN ERROR:', e);
+
+      let description = 'Login failed. Please try again.';
+
+      if (e.code === 'auth/user-not-found') {
+        description = 'No account found with this email.';
+      } else if (e.code === 'auth/wrong-password') {
+        description = 'Incorrect password.';
+      } else if (e.code === 'auth/invalid-credential') {
+        description = 'Invalid email or password.';
+      }
 
       toast({
         variant: 'destructive',
         title: 'Login Failed',
-        description:
-          e.message === 'USERNAME_NOT_FOUND'
-            ? 'Username not found'
-            : e.code === 'auth/wrong-password'
-            ? 'Incorrect password'
-            : 'Login failed',
+        description,
       });
     } finally {
       setLoading(false);
@@ -115,13 +108,15 @@ const SignInForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <h1 className="text-3xl font-bold">Sign In</h1>
+
         <FormField
           control={form.control}
-          name="username"
+          name="email"
           render={({ field }) => (
             <FormItem>
               <FormControl>
-                <Input placeholder="Username" {...field} />
+                <Input placeholder="Email" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -165,7 +160,7 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   });
 
   const onSubmit = async (values: z.infer<typeof signUpSchema>) => {
-    console.log('🟢 SignUp onSubmit called', values);
+    console.log('🟢 SignUp onSubmit', values.email);
 
     if (!auth || !firestore) {
       console.error('❌ Firebase not ready');
@@ -175,15 +170,6 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
     setLoading(true);
 
     try {
-      const q = query(
-        collection(firestore, 'users'),
-        where('username', '==', values.username),
-        limit(1)
-      );
-
-      const snap = await getDocs(q);
-      if (!snap.empty) throw new Error('USERNAME_TAKEN');
-
       const cred = await createUserWithEmailAndPassword(
         auth,
         values.email,
@@ -194,23 +180,31 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
         doc(firestore, `users/${cred.user.uid}`),
         {
           id: cred.user.uid,
-          ...values,
+          username: values.username,
+          email: values.email,
+          age: values.age,
+          height: values.height,
+          weight: values.weight,
         },
         { merge: true }
       );
 
       toast({ title: 'Account created successfully' });
       onAuthSuccess();
+
     } catch (e: any) {
       console.error('🔥 SIGN UP ERROR:', e);
+
+      let description = 'Signup failed. Please try again.';
+
+      if (e.code === 'auth/email-already-in-use') {
+        description = 'Email already registered.';
+      }
 
       toast({
         variant: 'destructive',
         title: 'Sign Up Failed',
-        description:
-          e.message === 'USERNAME_TAKEN'
-            ? 'Username already exists'
-            : 'Signup failed',
+        description,
       });
     } finally {
       setLoading(false);
@@ -220,12 +214,14 @@ const SignUpForm = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+        <h1 className="text-3xl font-bold">Create Account</h1>
+
         <Input placeholder="Username" {...form.register('username')} />
         <Input placeholder="Email" {...form.register('email')} />
         <Input type="password" placeholder="Password" {...form.register('password')} />
         <Input type="number" placeholder="Age" {...form.register('age')} />
-        <Input type="number" placeholder="Height" {...form.register('height')} />
-        <Input type="number" placeholder="Weight" {...form.register('weight')} />
+        <Input type="number" placeholder="Height (cm)" {...form.register('height')} />
+        <Input type="number" placeholder="Weight (kg)" {...form.register('weight')} />
 
         <Button type="submit" disabled={loading}>
           {loading && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
